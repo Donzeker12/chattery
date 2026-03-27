@@ -1,0 +1,561 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Chat;
+use App\Models\Message;
+use App\Models\Reaction;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ChatController extends Controller
+{
+    /**
+     * Show the chat interface.
+     */
+    public function index(Request $request): Response
+    {
+        $user = Auth::user();
+        $onlineThreshold = now()->subMinutes(5);
+        
+        // Get all chats for the authenticated user with latest message
+        $chats = Chat::where('user_one_id', $user->id)
+            ->orWhere('user_two_id', $user->id)
+            ->with(['userOne', 'userTwo', 'latestMessage'])
+            ->get()
+            ->filter(function ($chat) use ($user) {
+                // Filter out chats hidden by this user
+                $hiddenForUsers = $chat->hidden_for_users ?? [];
+                return !in_array($user->id, $hiddenForUsers);
+            })
+            ->map(function ($chat) use ($user, $onlineThreshold) {
+                $otherUser = $chat->otherParticipant($user->id);
+                $isOnline = $otherUser->last_seen_at && $otherUser->last_seen_at >= $onlineThreshold;
+                
+                return [
+                    'id' => $chat->id,
+                    'participant' => [
+                        'id' => $otherUser->id,
+                        'name' => $otherUser->name,
+                        'email' => $otherUser->email,
+                        'is_online' => $isOnline,
+                        'profile_photo_url' => $otherUser->profile_photo_path ? asset('storage/' . $otherUser->profile_photo_path) : null,
+                    ],
+                    'latest_message' => $chat->latestMessage ? [
+                        'message' => $chat->latestMessage->message,
+                        'created_at' => $chat->latestMessage->created_at,
+                        'is_mine' => $chat->latestMessage->user_id === $user->id,
+                    ] : null,
+                    'unread_count' => $chat->unreadMessagesCount($user->id),
+                ];
+            })
+            ->sortByDesc(function ($chat) {
+                return $chat['latest_message']['created_at']?->timestamp ?? 0;
+            })
+            ->values();
+
+        // Get all users except the authenticated user for starting new chats
+        $users = User::where('id', '!=', $user->id)
+            ->select('id', 'name', 'email', 'profile_photo_path')
+            ->get()
+            ->map(function ($u) {
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'profile_photo_url' => $u->profile_photo_path ? asset('storage/' . $u->profile_photo_path) : null,
+                ];
+            });
+
+        return Inertia::render('Chat/Index', [
+            'chats' => $chats,
+            'users' => $users,
+            'auth' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'is_admin' => $user->is_admin,
+                    'profile_photo_url' => $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null,
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Get messages for a specific chat.
+     */
+    public function show(Chat $chat)
+    {
+        $user = Auth::user();
+        $onlineThreshold = now()->subMinutes(5);
+
+        // Verify user is part of this chat
+        if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        // Mark messages as read
+        $chat->messages()
+            ->where('user_id', '!=', $user->id)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        $messages = $chat->messages()
+            ->with(['user', 'reactions.user'])
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->filter(function ($message) use ($user) {
+                // Filter out messages deleted for everyone
+                if ($message->deleted_at) {
+                    return false;
+                }
+                // Filter out messages deleted for this user
+                $deletedForUsers = $message->deleted_for_users ?? [];
+                if (in_array($user->id, $deletedForUsers)) {
+                    return false;
+                }
+                // Filter out messages hidden for this user (when chat was deleted)
+                $hiddenForUsers = $message->hidden_for_users ?? [];
+                if (in_array($user->id, $hiddenForUsers)) {
+                    return false;
+                }
+                return true;
+            })
+            ->map(function ($message) use ($user) {
+                return [
+                    'id' => $message->id,
+                    'message' => $message->message,
+                    'attachment_type' => $message->attachment_type,
+                    'attachment_path' => $message->attachment_path ? asset('storage/' . $message->attachment_path) : null,
+                    'is_mine' => $message->user_id === $user->id,
+                    'created_at' => $message->created_at,
+                    'edited_at' => $message->edited_at,
+                    'user' => [
+                        'name' => $message->user->name,
+                    ],
+                    'reactions' => $message->reactions->groupBy('emoji')->map(function ($reactions, $emoji) use ($user) {
+                        return [
+                            'emoji' => $emoji,
+                            'count' => $reactions->count(),
+                            'users' => $reactions->map(fn($r) => ['id' => $r->user_id, 'name' => $r->user->name])->values(),
+                            'reacted_by_me' => $reactions->contains('user_id', $user->id),
+                        ];
+                    })->values(),
+                ];
+            })
+            ->values();
+
+        $otherUser = $chat->otherParticipant($user->id);
+        $isOnline = $otherUser->last_seen_at && $otherUser->last_seen_at >= $onlineThreshold;
+
+        return response()->json([
+            'chat' => [
+                'id' => $chat->id,
+                'participant' => [
+                    'id' => $otherUser->id,
+                    'name' => $otherUser->name,
+                    'email' => $otherUser->email,
+                    'is_online' => $isOnline,
+                    'profile_photo_url' => $otherUser->profile_photo_path ? asset('storage/' . $otherUser->profile_photo_path) : null,
+                ],
+            ],
+            'messages' => $messages,
+        ]);
+    }
+
+    /**
+     * Send a message in a chat.
+     */
+    public function sendMessage(Request $request, Chat $chat)
+    {
+        $user = Auth::user();
+
+        // Verify user is part of this chat
+        if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'message' => 'nullable|string|max:5000',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240', // Max 10MB
+        ]);
+
+        // Ensure at least message or attachment is provided
+        if (empty($validated['message']) && !$request->hasFile('attachment')) {
+            return response()->json(['error' => 'Message or attachment is required'], 422);
+        }
+
+        $attachmentPath = null;
+        $attachmentType = null;
+
+        // Handle file upload
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $attachmentPath = $file->storeAs('chat-attachments', $filename, 'public');
+            $attachmentType = 'image';
+        }
+
+        // If chat was hidden by either user, unhide it for both users
+        if (!empty($chat->hidden_for_users)) {
+            $chat->hidden_for_users = [];
+            $chat->save();
+        }
+
+        $message = $chat->messages()->create([
+            'user_id' => $user->id,
+            'message' => $validated['message'] ?? '',
+            'attachment_type' => $attachmentType,
+            'attachment_path' => $attachmentPath,
+        ]);
+
+        return response()->json([
+            'message' => [
+                'id' => $message->id,
+                'message' => $message->message,
+                'attachment_type' => $message->attachment_type,
+                'attachment_path' => $message->attachment_path ? asset('storage/' . $message->attachment_path) : null,
+                'is_mine' => true,
+                'created_at' => $message->created_at,
+                'user' => [
+                    'name' => $user->name,
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Start a new chat with a user.
+     */
+    public function startChat(Request $request)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $otherUserId = $validated['user_id'];
+
+        // Check if chat already exists
+        $chat = Chat::where(function ($query) use ($user, $otherUserId) {
+            $query->where('user_one_id', $user->id)
+                ->where('user_two_id', $otherUserId);
+        })->orWhere(function ($query) use ($user, $otherUserId) {
+            $query->where('user_one_id', $otherUserId)
+                ->where('user_two_id', $user->id);
+        })->first();
+
+        // Create chat if it doesn't exist
+        if (!$chat) {
+            $chat = Chat::create([
+                'user_one_id' => min($user->id, $otherUserId),
+                'user_two_id' => max($user->id, $otherUserId),
+            ]);
+        } else {
+            // If chat was hidden, unhide it for BOTH users (fresh start)
+            if (!empty($chat->hidden_for_users)) {
+                $chat->hidden_for_users = [];
+                $chat->save();
+            }
+        }
+
+        return response()->json([
+            'chat_id' => $chat->id,
+        ]);
+    }
+
+    /**
+     * Get chat list for polling updates.
+     */
+    public function getChatList()
+    {
+        $user = Auth::user();
+        $onlineThreshold = now()->subMinutes(5);
+        
+        // Get all chats for the authenticated user with latest message
+        $chats = Chat::where('user_one_id', $user->id)
+            ->orWhere('user_two_id', $user->id)
+            ->with(['userOne', 'userTwo', 'latestMessage'])
+            ->get()
+            ->filter(function ($chat) use ($user) {
+                // Filter out chats hidden by this user
+                $hiddenForUsers = $chat->hidden_for_users ?? [];
+                return !in_array($user->id, $hiddenForUsers);
+            })
+            ->map(function ($chat) use ($user, $onlineThreshold) {
+                $otherUser = $chat->otherParticipant($user->id);
+                $isOnline = $otherUser->last_seen_at && $otherUser->last_seen_at >= $onlineThreshold;
+                
+                return [
+                    'id' => $chat->id,
+                    'participant' => [
+                        'id' => $otherUser->id,
+                        'name' => $otherUser->name,
+                        'email' => $otherUser->email,
+                        'is_online' => $isOnline,
+                        'profile_photo_url' => $otherUser->profile_photo_path ? asset('storage/' . $otherUser->profile_photo_path) : null,
+                    ],
+                    'latest_message' => $chat->latestMessage ? [
+                        'message' => $chat->latestMessage->message,
+                        'created_at' => $chat->latestMessage->created_at,
+                        'is_mine' => $chat->latestMessage->user_id === $user->id,
+                    ] : null,
+                    'unread_count' => $chat->unreadMessagesCount($user->id),
+                ];
+            })
+            ->sortByDesc(function ($chat) {
+                return $chat['latest_message']['created_at'] ?? $chat['id'];
+            })
+            ->values();
+
+        return response()->json([
+            'chats' => $chats,
+        ]);
+    }
+
+    /**
+     * Delete message for me (alleen voor de ingelogde gebruiker).
+     */
+    public function deleteMessageForMe(Message $message)
+    {
+        $user = Auth::user();
+
+        // Verify user is part of the chat
+        if ($message->chat->user_one_id !== $user->id && $message->chat->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        // Add user ID to deleted_for_users array
+        $deletedForUsers = $message->deleted_for_users ?? [];
+        if (!in_array($user->id, $deletedForUsers)) {
+            $deletedForUsers[] = $user->id;
+            $message->deleted_for_users = $deletedForUsers;
+            $message->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bericht verwijderd voor jou'
+        ]);
+    }
+
+    /**
+     * Delete message for everyone (alleen voor de afzender).
+     */
+    public function deleteMessageForEveryone(Message $message)
+    {
+        $user = Auth::user();
+
+        // Only the sender can delete for everyone
+        if ($message->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Je kunt alleen je eigen berichten voor iedereen verwijderen'
+            ], 403);
+        }
+
+        // Mark as deleted for everyone
+        $message->deleted_at = now();
+        $message->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bericht verwijderd voor iedereen'
+        ]);
+    }
+
+    /**
+     * Edit a message (alleen voor de afzender).
+     */
+    public function editMessage(Request $request, Message $message)
+    {
+        $user = Auth::user();
+
+        // Only the sender can edit
+        if ($message->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Je kunt alleen je eigen berichten bewerken'
+            ], 403);
+        }
+
+        // Cannot edit deleted messages
+        if ($message->deleted_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Verwijderde berichten kunnen niet bewerkt worden'
+            ], 400);
+        }
+
+        $validated = $request->validate([
+            'message' => 'required|string|max:10000',
+        ]);
+
+        // Save original message if not already saved
+        if (!$message->original_message) {
+            $message->original_message = $message->message;
+        }
+
+        // Update message
+        $message->message = $validated['message'];
+        $message->edited_at = now();
+        $message->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bericht bewerkt',
+            'updated_message' => [
+                'id' => $message->id,
+                'message' => $message->message,
+                'edited_at' => $message->edited_at,
+            ]
+        ]);
+    }
+
+    /**
+     * Add a reaction to a message.
+     */
+    public function addReaction(Request $request, Message $message)
+    {
+        $user = Auth::user();
+
+        // Verify user is part of the chat
+        if ($message->chat->user_one_id !== $user->id && $message->chat->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        // Validate emoji
+        $validated = $request->validate([
+            'emoji' => 'required|string|max:10',
+        ]);
+
+        // Check if reaction already exists (unique constraint)
+        $existingReaction = Reaction::where('message_id', $message->id)
+            ->where('user_id', $user->id)
+            ->where('emoji', $validated['emoji'])
+            ->first();
+
+        if ($existingReaction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Je hebt al met deze emoji gereageerd',
+            ], 422);
+        }
+
+        // Create reaction
+        $reaction = Reaction::create([
+            'message_id' => $message->id,
+            'user_id' => $user->id,
+            'emoji' => $validated['emoji'],
+        ]);
+
+        // Load user relationship
+        $reaction->load('user');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reactie toegevoegd',
+            'reaction' => [
+                'id' => $reaction->id,
+                'emoji' => $reaction->emoji,
+                'user' => [
+                    'id' => $reaction->user->id,
+                    'name' => $reaction->user->name,
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Remove a reaction from a message.
+     */
+    public function removeReaction(Message $message, string $emoji)
+    {
+        $user = Auth::user();
+
+        // Verify user is part of the chat
+        if ($message->chat->user_one_id !== $user->id && $message->chat->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        // Find and delete the reaction
+        $reaction = Reaction::where('message_id', $message->id)
+            ->where('user_id', $user->id)
+            ->where('emoji', $emoji)
+            ->first();
+
+        if (!$reaction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reactie niet gevonden',
+            ], 404);
+        }
+
+        $reaction->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reactie verwijderd',
+        ]);
+    }
+
+    /**
+     * Delete a chat conversation.
+     */
+    public function deleteChat(Chat $chat)
+    {
+        $user = Auth::user();
+
+        // Verify user is part of this chat
+        if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        // Add user to hidden_for_users array for the chat
+        $hiddenForUsers = $chat->hidden_for_users ?? [];
+        
+        if (!in_array($user->id, $hiddenForUsers)) {
+            $hiddenForUsers[] = $user->id;
+            $chat->hidden_for_users = $hiddenForUsers;
+            $chat->save();
+        }
+
+        // Hide all messages in this chat for this user
+        foreach ($chat->messages as $message) {
+            $messageHiddenForUsers = $message->hidden_for_users ?? [];
+            if (!in_array($user->id, $messageHiddenForUsers)) {
+                $messageHiddenForUsers[] = $user->id;
+                $message->hidden_for_users = $messageHiddenForUsers;
+                $message->save();
+            }
+        }
+
+        // If both users have hidden the chat, permanently delete it
+        $bothUsersHidden = in_array($chat->user_one_id, $hiddenForUsers) && 
+                          in_array($chat->user_two_id, $hiddenForUsers);
+        
+        if ($bothUsersHidden) {
+            // Delete all messages and reactions first
+            foreach ($chat->messages as $message) {
+                $message->reactions()->delete();
+            }
+            $chat->messages()->delete();
+            $chat->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Gesprek permanent verwijderd',
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Gesprek verborgen',
+        ]);
+    }
+}

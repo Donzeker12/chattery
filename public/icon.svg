@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#3b82f6" rx="100"/>
+  
+  <!-- Chat bubble 1 -->
+  <path d="M 140 180 Q 140 140 180 140 L 280 140 Q 320 140 320 180 L 320 240 Q 320 280 280 280 L 200 280 L 160 320 L 160 280 Q 140 280 140 240 Z" 
+        fill="white" opacity="0.9"/>
+  
+  <!-- Chat bubble 2 -->
+  <path d="M 372 260 Q 372 220 332 220 L 232 220 Q 192 220 192 260 L 192 320 Q 192 360 232 360 L 312 360 L 352 400 L 352 360 Q 372 360 372 320 Z" 
+        fill="white"/>
+  
+  <!-- Message lines in bubble 1 -->
+  <line x1="170" y1="180" x2="290" y2="180" stroke="#3b82f6" stroke-width="12" stroke-linecap="round"/>
+  <line x1="170" y1="210" x2="250" y2="210" stroke="#3b82f6" stroke-width="12" stroke-linecap="round"/>
+  
+  <!-- Message lines in bubble 2 -->
+  <line x1="222" y1="270" x2="342" y2="270" stroke="#3b82f6" stroke-width="12" stroke-linecap="round"/>
+  <line x1="222" y1="300" x2="302" y2="300" stroke="#3b82f6" stroke-width="12" stroke-linecap="round"/>
+</svg>
