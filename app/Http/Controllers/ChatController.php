@@ -526,14 +526,14 @@ class ChatController extends Controller
         }
 
         // Hide all messages in this chat for this user
-        $chat->messages()->each(function ($message) use ($user) {
+        foreach ($chat->messages as $message) {
             $messageHiddenForUsers = $message->hidden_for_users ?? [];
             if (!in_array($user->id, $messageHiddenForUsers)) {
                 $messageHiddenForUsers[] = $user->id;
                 $message->hidden_for_users = $messageHiddenForUsers;
                 $message->save();
             }
-        });
+        }
 
         // If both users have hidden the chat, permanently delete it
         $bothUsersHidden = in_array($chat->user_one_id, $hiddenForUsers) && 
