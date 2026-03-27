@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chattery-v2';
+const CACHE_NAME = 'chattery-v3';
 const urlsToCache = [
   '/',
   '/chat',
