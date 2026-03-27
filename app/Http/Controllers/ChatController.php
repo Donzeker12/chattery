@@ -526,24 +526,22 @@ class ChatController extends Controller
         }
 
         // Hide all messages in this chat for this user
-        foreach ($chat->messages as $message) {
+        $chat->messages()->each(function ($message) use ($user) {
             $messageHiddenForUsers = $message->hidden_for_users ?? [];
             if (!in_array($user->id, $messageHiddenForUsers)) {
                 $messageHiddenForUsers[] = $user->id;
                 $message->hidden_for_users = $messageHiddenForUsers;
                 $message->save();
             }
-        }
+        });
 
         // If both users have hidden the chat, permanently delete it
         $bothUsersHidden = in_array($chat->user_one_id, $hiddenForUsers) && 
                           in_array($chat->user_two_id, $hiddenForUsers);
         
         if ($bothUsersHidden) {
-            // Delete all messages and reactions first
-            foreach ($chat->messages as $message) {
-                $message->reactions()->delete();
-            }
+            // Delete all messages and reactions using query builder (more efficient)
+            // This cascades properly due to foreign key constraints
             $chat->messages()->delete();
             $chat->delete();
             
