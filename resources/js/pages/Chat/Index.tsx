@@ -53,8 +53,32 @@ interface PageProps {
 }
 
 export default function Index({ chats, users, auth }: PageProps) {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    // Check if we're on mobile
+    const [isMobile, setIsMobile] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default closed
     const [selectedChat, setSelectedChat] = useState<number | null>(null);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+            // Auto-close sidebar on mobile if a chat is selected
+            if (window.innerWidth < 768 && selectedChat) {
+                setIsSidebarOpen(false);
+            }
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, [selectedChat]);
+
+    // Open sidebar by default on desktop
+    useEffect(() => {
+        if (!isMobile) {
+            setIsSidebarOpen(true);
+        }
+    }, [isMobile]);
+
     const [messages, setMessages] = useState<Message[]>([]);
     const [currentParticipant, setCurrentParticipant] = useState<User | null>(null);
     const [messageInput, setMessageInput] = useState('');
@@ -77,6 +101,12 @@ export default function Index({ chats, users, auth }: PageProps) {
     // Load chat messages when a chat is selected
     const loadChat = async (chatId: number) => {
         setIsLoading(true);
+        
+        // Close sidebar on mobile when selecting a chat
+        if (isMobile) {
+            setIsSidebarOpen(false);
+        }
+        
         try {
             const response = await axios.get(`/chat/${chatId}`);
             setMessages(response.data.messages);
@@ -435,12 +465,20 @@ export default function Index({ chats, users, auth }: PageProps) {
             <Head title="Chat" />
             <PWAInstallPrompt />
             <div className="h-screen flex overflow-hidden bg-gray-100">
+                {/* Mobile overlay for sidebar */}
+                {isSidebarOpen && (
+                    <div
+                        className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
+
                 {/* Sidebar */}
                 <div className="relative">
                     <div
                         className={`${
-                            isSidebarOpen ? 'w-80' : 'w-0'
-                        } bg-white border-r border-gray-200 transition-all duration-300 flex flex-col h-screen`}
+                            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                        } md:translate-x-0 fixed md:relative z-50 md:z-auto w-80 md:w-80 bg-white border-r border-gray-200 transition-transform duration-300 flex flex-col h-screen`}
                     >
                         {isSidebarOpen && (
                             <>
@@ -522,7 +560,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         >
                                             <button
                                                 onClick={() => loadChat(chat.id)}
-                                                className="w-full p-4 hover:bg-gray-50 transition text-left"
+                                                className="w-full p-4 md:p-3 hover:bg-gray-50 transition text-left min-h-[64px] md:min-h-[auto]"
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <Avatar
@@ -552,10 +590,10 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 </div>
                                             </button>
                                             
-                                            {/* Delete button - shows on hover */}
+                                            {/* Delete button - always visible on mobile, hover on desktop */}
                                             <button
                                                 onClick={(e) => openDeleteModal(chat.id, e)}
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white p-2 rounded-full"
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white p-2 rounded-full min-w-[36px] min-h-[36px] flex items-center justify-center"
                                                 title="Gesprek verwijderen"
                                             >
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -603,6 +641,17 @@ export default function Index({ chats, users, auth }: PageProps) {
                     {selectedChat && currentParticipant ? (
                         <>
                             <div className="bg-white border-b border-gray-200 p-4 flex items-center gap-4 shadow-sm">
+                                {/* Mobile menu button */}
+                                <button
+                                    onClick={() => setIsSidebarOpen(true)}
+                                    className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 transition"
+                                    type="button"
+                                >
+                                    <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                    </svg>
+                                </button>
+
                                 <button
                                     onClick={() => {
                                         if (currentParticipant.profile_photo_url) {
@@ -900,7 +949,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     <button
                                         type="button"
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition"
+                                        className="p-3 md:p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition min-w-[44px] min-h-[44px] flex items-center justify-center"
                                         title="Upload afbeelding"
                                     >
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -912,7 +961,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         <button
                                             type="button"
                                             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                                            className="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition"
+                                            className="p-3 md:p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition min-w-[44px] min-h-[44px] flex items-center justify-center"
                                             title="Emoji toevoegen"
                                         >
                                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -932,15 +981,18 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         value={messageInput}
                                         onChange={(e) => setMessageInput(e.target.value)}
                                         placeholder="Typ een bericht..."
-                                        className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        className="flex-1 px-4 py-3 text-base border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                                     />
                                     
                                     <button
                                         type="submit"
                                         disabled={!messageInput && !selectedImage}
-                                        className="bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed min-w-[44px] min-h-[44px]"
                                     >
-                                        Verzend
+                                        <span className="hidden sm:inline">Verzend</span>
+                                        <svg className="sm:hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                        </svg>
                                     </button>
                                 </form>
                             </div>
