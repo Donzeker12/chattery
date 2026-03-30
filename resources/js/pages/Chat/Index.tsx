@@ -640,7 +640,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                     {/* Header */}
                     {selectedChat && currentParticipant ? (
                         <>
-                            <div className="bg-white border-b border-gray-200 p-4 flex items-center gap-4 shadow-sm">
+                            <div className="bg-white border-b border-gray-200 p-3 sm:p-4 flex items-center gap-3 sm:gap-4 shadow-sm">
                                 {/* Mobile menu button */}
                                 <button
                                     onClick={() => setIsSidebarOpen(true)}
@@ -669,10 +669,10 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         isOnline={currentParticipant.is_online}
                                     />
                                 </button>
-                                <div>
-                                    <p className="font-semibold text-gray-900">{currentParticipant.name}</p>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">{currentParticipant.name}</p>
                                     <div className="flex items-center gap-2">
-                                        <p className="text-sm text-gray-600">{currentParticipant.email}</p>
+                                        <p className="text-xs sm:text-sm text-gray-600 truncate hidden sm:block">{currentParticipant.email}</p>
                                         {currentParticipant.is_online && (
                                             <span className="text-xs text-green-600 font-medium">• Online</span>
                                         )}
@@ -683,7 +683,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                             {/* Messages */}
                             <div
                                 id="messages-container"
-                                className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
+                                className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50"
                             >
                                 {isLoading ? (
                                     <div className="flex items-center justify-center h-full">
@@ -706,7 +706,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                             key={message.id}
                                             className={`flex ${message.is_mine ? 'justify-end' : 'justify-start'} group`}
                                         >
-                                            <div className={`relative ${isOnlyEmoji ? '' : 'max-w-xs lg:max-w-md'}`}>
+                                            <div className={`relative ${isOnlyEmoji ? '' : 'max-w-[85%] sm:max-w-sm md:max-w-md'}`}>
                                                 {/* Edit/Delete buttons - alleen voor eigen berichten */}
                                                 {message.is_mine && !isOnlyEmoji && !isEditing && (
                                                     <div className="absolute -top-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
@@ -918,7 +918,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                             )}
 
                             {/* Message Input */}
-                            <div className="bg-white border-t border-gray-200 p-4">
+                            <div className="bg-white border-t border-gray-200 p-2 sm:p-4">
                                 {imagePreview && (
                                     <div className="mb-3 relative inline-block">
                                         <img
@@ -937,7 +937,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     </div>
                                 )}
                                 
-                                <form onSubmit={sendMessage} className="flex gap-2 items-end relative">
+                                <form onSubmit={sendMessage} className="flex gap-1 sm:gap-2 items-end relative">
                                     <input
                                         ref={fileInputRef}
                                         type="file"
@@ -981,13 +981,13 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         value={messageInput}
                                         onChange={(e) => setMessageInput(e.target.value)}
                                         placeholder="Typ een bericht..."
-                                        className="flex-1 px-4 py-3 text-base border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                                     />
                                     
                                     <button
                                         type="submit"
                                         disabled={!messageInput && !selectedImage}
-                                        className="bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed min-w-[44px] min-h-[44px]"
+                                        className="bg-blue-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed min-w-[44px] min-h-[44px] flex items-center justify-center"
                                     >
                                         <span className="hidden sm:inline">Verzend</span>
                                         <svg className="sm:hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
