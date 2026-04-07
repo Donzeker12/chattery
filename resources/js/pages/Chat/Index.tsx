@@ -55,29 +55,17 @@ interface PageProps {
 export default function Index({ chats, users, auth }: PageProps) {
     // Check if we're on mobile
     const [isMobile, setIsMobile] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default closed
     const [selectedChat, setSelectedChat] = useState<number | null>(null);
 
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
-            // Auto-close sidebar on mobile if a chat is selected
-            if (window.innerWidth < 768 && selectedChat) {
-                setIsSidebarOpen(false);
-            }
         };
         
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
-    }, [selectedChat]);
-
-    // Open sidebar by default on desktop
-    useEffect(() => {
-        if (!isMobile) {
-            setIsSidebarOpen(true);
-        }
-    }, [isMobile]);
+    }, []);
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [currentParticipant, setCurrentParticipant] = useState<User | null>(null);
@@ -96,16 +84,13 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [showDeleteMenu, setShowDeleteMenu] = useState<number | null>(null);
     const [showReactionPicker, setShowReactionPicker] = useState<number | null>(null);
     const [showScrollButton, setShowScrollButton] = useState(false);
+    const [showChatSettings, setShowChatSettings] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Load chat messages when a chat is selected
     const loadChat = async (chatId: number) => {
         setIsLoading(true);
-        
-        // Close sidebar on mobile when selecting a chat
-        if (isMobile) {
-            setIsSidebarOpen(false);
-        }
         
         try {
             const response = await axios.get(`/chat/${chatId}`);
@@ -432,7 +417,7 @@ export default function Index({ chats, users, auth }: PageProps) {
         return () => messageContainer.removeEventListener('scroll', handleScroll);
     }, [selectedChat, messages]);
 
-    // Close delete menu when clicking outside
+    // Close menus when clicking outside
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
@@ -444,11 +429,15 @@ export default function Index({ chats, users, auth }: PageProps) {
             if (showReactionPicker !== null && !target.closest('[data-reaction-picker]')) {
                 setShowReactionPicker(null);
             }
+
+            if (showChatSettings && !target.closest('.relative')) {
+                setShowChatSettings(false);
+            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [showDeleteMenu, showReactionPicker]);
+    }, [showDeleteMenu, showReactionPicker, showChatSettings]);
 
     // Check if message is a single emoji
     const isSingleEmoji = (text: string): boolean => {
@@ -465,192 +454,163 @@ export default function Index({ chats, users, auth }: PageProps) {
             <Head title="Chat" />
             <PWAInstallPrompt />
             <div className="h-screen flex overflow-hidden bg-gray-100">
-                {/* Mobile overlay for sidebar */}
-                {isSidebarOpen && (
-                    <div
-                        className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-                        onClick={() => setIsSidebarOpen(false)}
-                    />
-                )}
-
-                {/* Sidebar */}
-                <div className="relative">
-                    <div
-                        className={`${
-                            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                        } md:translate-x-0 fixed md:relative z-50 md:z-auto w-80 md:w-80 bg-white border-r border-gray-200 transition-transform duration-300 flex flex-col h-screen`}
-                    >
-                        {isSidebarOpen && (
-                            <>
-                                {/* Sidebar Header */}
-                                <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-xl font-bold">Chats</h2>
-                                        <div className="flex gap-2">
-                                            {auth.user.is_admin && (
-                                                <a
-                                                    href="/admin"
-                                                    className="text-sm bg-yellow-500/80 hover:bg-yellow-600 px-3 py-1 rounded-lg transition"
-                                                >
-                                                    Admin
-                                                </a>
-                                            )}
-                                            <button
-                                                onClick={handleLogout}
-                                                className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition"
-                                            >
-                                                Uitloggen
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => router.visit('/profile')}
-                                        className="flex items-center gap-3 w-full hover:bg-white/10 p-2 rounded-lg transition-colors cursor-pointer group"
-                                        title="Klik om je profiel te bewerken"
+                {/* Chat List - Full screen on mobile, sidebar on desktop */}
+                <div className={`${
+                    isMobile 
+                        ? (selectedChat ? 'hidden' : 'w-full') 
+                        : 'w-80'
+                    } bg-white border-r border-gray-200 flex flex-col h-screen`}>
+                    
+                    {/* Sidebar Header */}
+                    <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold">Chats</h2>
+                            <div className="flex gap-2">
+                                {auth.user.is_admin && (
+                                    <a
+                                        href="/admin"
+                                        className="text-sm bg-yellow-500/80 hover:bg-yellow-600 px-3 py-1 rounded-lg transition"
                                     >
-                                        <div className="relative group-hover:brightness-75 transition-all">
-                                            <Avatar
-                                                photoUrl={auth.user.profile_photo_url}
-                                                name={auth.user.name}
-                                                size="md"
-                                            />
-                                            {/* Edit icon in corner */}
-                                            <span className="absolute -bottom-0.5 -right-0.5 bg-indigo-600 rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                                                ✏️
-                                            </span>
-                                        </div>
-                                        <div className="text-left flex-1">
-                                            <p className="font-semibold">{auth.user.name}</p>
-                                            <p className="text-sm text-white/80 group-hover:text-white/100 transition-colors">
-                                                Klik om profiel te bewerken
-                                            </p>
-                                        </div>
-                                        <div className="ml-auto text-white/60 group-hover:text-white/90 transition-colors">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </div>
-                                    </button>
-                                </div>
-
-                            {/* New Chat Button */}
-                            <div className="p-4 border-b border-gray-200">
+                                        Admin
+                                    </a>
+                                )}
                                 <button
-                                    onClick={() => setShowNewChatModal(true)}
-                                    className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                                    onClick={handleLogout}
+                                    className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition"
                                 >
-                                    + Nieuw gesprek
+                                    Uitloggen
                                 </button>
                             </div>
-
-                            {/* Chat List */}
-                            <div className="flex-1 overflow-y-auto">
-                                {chatsList.length === 0 ? (
-                                    <div className="p-4 text-center text-gray-500">
-                                        <p>Geen gesprekken</p>
-                                        <p className="text-sm mt-2">Start een nieuw gesprek!</p>
-                                    </div>
-                                ) : (
-                                    chatsList.map((chat) => (
-                                        <div
-                                            key={chat.id}
-                                            className={`relative group w-full border-b border-gray-200 ${
-                                                selectedChat === chat.id ? 'bg-blue-50' : ''
-                                            }`}
-                                        >
-                                            <button
-                                                onClick={() => loadChat(chat.id)}
-                                                className="w-full p-4 md:p-3 hover:bg-gray-50 transition text-left min-h-[64px] md:min-h-[auto]"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar
-                                                        photoUrl={chat.participant.profile_photo_url}
-                                                        name={chat.participant.name}
-                                                        size="lg"
-                                                        isOnline={chat.participant.is_online}
-                                                    />
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <p className="font-semibold text-gray-900 truncate">
-                                                                {chat.participant.name}
-                                                            </p>
-                                                            {chat.unread_count > 0 && (
-                                                                <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                                                                    {chat.unread_count}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        {chat.latest_message && (
-                                                            <p className="text-sm text-gray-600 truncate">
-                                                                {chat.latest_message.is_mine ? 'Jij: ' : ''}
-                                                                {chat.latest_message.message}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </button>
-                                            
-                                            {/* Delete button - always visible on mobile, hover on desktop */}
-                                            <button
-                                                onClick={(e) => openDeleteModal(chat.id, e)}
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white p-2 rounded-full min-w-[36px] min-h-[36px] flex items-center justify-center"
-                                                title="Gesprek verwijderen"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    ))
-                                )}
+                        </div>
+                        <button
+                            onClick={() => router.visit('/profile')}
+                            className="flex items-center gap-3 w-full hover:bg-white/10 p-2 rounded-lg transition-colors cursor-pointer group"
+                            title="Klik om je profiel te bewerken"
+                        >
+                            <div className="relative group-hover:brightness-75 transition-all">
+                                <Avatar
+                                    photoUrl={auth.user.profile_photo_url}
+                                    name={auth.user.name}
+                                    size="md"
+                                />
+                                {/* Edit icon in corner */}
+                                <span className="absolute -bottom-0.5 -right-0.5 bg-indigo-600 rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                    ✏️
+                                </span>
                             </div>
-                        </>
-                    )}
+                            <div className="text-left flex-1">
+                                <p className="font-semibold">{auth.user.name}</p>
+                                <p className="text-sm text-white/80 group-hover:text-white/100 transition-colors">
+                                    Klik om profiel te bewerken
+                                </p>
+                            </div>
+                            <div className="ml-auto text-white/60 group-hover:text-white/90 transition-colors">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </div>
+                        </button>
                     </div>
 
-                    {/* Toggle Sidebar Button */}
-                    <button
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="absolute top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg hover:shadow-xl p-2 rounded-full transition-all duration-300"
-                        style={{
-                            left: isSidebarOpen ? '19rem' : '0.5rem',
-                        }}
-                    >
-                        <svg
-                            className="w-5 h-5 text-gray-700 transition-transform duration-300"
-                            style={{
-                                transform: isSidebarOpen ? 'rotate(0deg)' : 'rotate(180deg)',
-                            }}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                    {/* New Chat Button */}
+                    <div className="p-4 border-b border-gray-200">
+                        <button
+                            onClick={() => setShowNewChatModal(true)}
+                            className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 19l-7-7 7-7"
-                            />
-                        </svg>
-                    </button>
+                            + Nieuw gesprek
+                        </button>
+                    </div>
+
+                    {/* Chat List */}
+                    <div className="flex-1 overflow-y-auto">
+                        {chatsList.length === 0 ? (
+                            <div className="p-4 text-center text-gray-500">
+                                <p>Geen gesprekken</p>
+                                <p className="text-sm mt-2">Start een nieuw gesprek!</p>
+                            </div>
+                        ) : (
+                            chatsList.map((chat) => (
+                                <div
+                                    key={chat.id}
+                                    className={`relative group w-full border-b border-gray-200 ${
+                                        selectedChat === chat.id ? 'bg-blue-50' : ''
+                                    }`}
+                                >
+                                    <button
+                                        onClick={() => loadChat(chat.id)}
+                                        className="w-full p-4 md:p-3 hover:bg-gray-50 transition text-left min-h-[64px] md:min-h-[auto]"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Avatar
+                                                photoUrl={chat.participant.profile_photo_url}
+                                                name={chat.participant.name}
+                                                size="lg"
+                                                isOnline={chat.participant.is_online}
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <p className="font-semibold text-gray-900 truncate">
+                                                        {chat.participant.name}
+                                                    </p>
+                                                    {chat.unread_count > 0 && (
+                                                        <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                                                            {chat.unread_count}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {chat.latest_message && (
+                                                    <p className="text-sm text-gray-600 truncate">
+                                                        {chat.latest_message.is_mine ? 'Jij: ' : ''}
+                                                        {chat.latest_message.message}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </button>
+                                    
+                                    {/* Delete button - always visible on mobile, hover on desktop */}
+                                    <button
+                                        onClick={(e) => openDeleteModal(chat.id, e)}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white p-2 rounded-full min-w-[36px] min-h-[36px] flex items-center justify-center"
+                                        title="Gesprek verwijderen"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
 
-                {/* Main Chat Area */}
-                <div className="flex-1 flex flex-col">
+                {/* Main Chat Area - Full screen on mobile when chat selected */}
+                <div className={`${
+                    isMobile 
+                        ? (selectedChat ? 'w-full' : 'hidden') 
+                        : 'flex-1'
+                    } flex flex-col`}>
                     {/* Header */}
                     {selectedChat && currentParticipant ? (
                         <>
                             <div className="bg-white border-b border-gray-200 p-3 sm:p-4 flex items-center gap-3 sm:gap-4 shadow-sm">
-                                {/* Mobile menu button */}
-                                <button
-                                    onClick={() => setIsSidebarOpen(true)}
-                                    className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 transition"
-                                    type="button"
-                                >
-                                    <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                    </svg>
-                                </button>
+                                {/* Mobile back button */}
+                                {isMobile && (
+                                    <button
+                                        onClick={() => {
+                                            setSelectedChat(null);
+                                            setCurrentParticipant(null);
+                                            setMessages([]);
+                                        }}
+                                        className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition"
+                                        type="button"
+                                    >
+                                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                    </button>
+                                )}
 
                                 <button
                                     onClick={() => {
@@ -677,6 +637,42 @@ export default function Index({ chats, users, auth }: PageProps) {
                                             <span className="text-xs text-green-600 font-medium">• Online</span>
                                         )}
                                     </div>
+                                </div>
+
+                                {/* Settings Menu */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => {
+                                            console.log('Settings menu clicked');
+                                            setShowChatSettings(!showChatSettings);
+                                        }}
+                                        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                                        title="Chat opties"
+                                    >
+                                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                        </svg>
+                                    </button>
+                                    
+                                    {showChatSettings && (
+                                        <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-48">
+                                            <div className="py-2">
+                                                <button
+                                                    onClick={() => {
+                                                        console.log('Profile clicked - opening profile modal');
+                                                        setShowProfileModal(true);
+                                                        setShowChatSettings(false);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left hover:bg-gray-100 transition flex items-center gap-3"
+                                                >
+                                                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                    </svg>
+                                                    Profiel bekijken
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -998,25 +994,29 @@ export default function Index({ chats, users, auth }: PageProps) {
                             </div>
                         </>
                     ) : (
-                        <div className="flex-1 flex items-center justify-center bg-gray-50">
-                            <div className="text-center text-gray-500">
-                                <svg
-                                    className="w-24 h-24 mx-auto mb-4 text-gray-400"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={1.5}
-                                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                                    />
-                                </svg>
-                                <h3 className="text-xl font-semibold mb-2">Selecteer een gesprek</h3>
-                                <p>Kies een gesprek uit de zijbalk om te beginnen met chatten</p>
+                        // Desktop: Show "Select conversation" message
+                        // Mobile: This div is hidden when no chat is selected
+                        !isMobile && (
+                            <div className="flex-1 flex items-center justify-center bg-gray-50">
+                                <div className="text-center text-gray-500">
+                                    <svg
+                                        className="w-24 h-24 mx-auto mb-4 text-gray-400"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={1.5}
+                                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                                        />
+                                    </svg>
+                                    <h3 className="text-xl font-semibold mb-2">Selecteer een gesprek</h3>
+                                    <p>Kies een gesprek uit de zijbalk om te beginnen met chatten</p>
+                                </div>
                             </div>
-                        </div>
+                        )
                     )}
                 </div>
 
@@ -1137,6 +1137,117 @@ export default function Index({ chats, users, auth }: PageProps) {
                             className="max-w-full max-h-full object-contain"
                             onClick={(e) => e.stopPropagation()}
                         />
+                    </div>
+                )}
+
+
+
+                {/* Profile Modal */}
+                {showProfileModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden">
+                            {/* Profile Header */}
+                            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 relative">
+                                <button
+                                    onClick={() => setShowProfileModal(false)}
+                                    className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                                
+                                <div className="flex flex-col items-center">
+                                    <div 
+                                        className="relative cursor-pointer mb-4"
+                                        onClick={() => {
+                                            if (currentParticipant.profile_photo_url) {
+                                                setFullscreenImage(currentParticipant.profile_photo_url);
+                                            }
+                                        }}
+                                    >
+                                        <Avatar
+                                            photoUrl={currentParticipant.profile_photo_url}
+                                            name={currentParticipant.name}
+                                            size="xl"
+                                        />
+                                        {currentParticipant.profile_photo_url && (
+                                            <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition">
+                                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <h2 className="text-xl font-bold">{currentParticipant.name}</h2>
+                                    <p className="text-white/80 text-sm">
+                                        {currentParticipant.is_online ? '🟢 Online' : '⚪ Offline'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Profile Content */}
+                            <div className="p-6 space-y-6 overflow-y-auto max-h-96">
+                                {/* Contact Info */}
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Contactgegevens</h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z" />
+                                            </svg>
+                                            <div>
+                                                <p className="text-sm text-gray-500">Email</p>
+                                                <p className="font-medium">{currentParticipant.email}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                            <div>
+                                                <p className="text-sm text-gray-500">Gebruiker ID</p>
+                                                <p className="font-medium">#{currentParticipant.id}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div>
+                                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Acties</h3>
+                                    <div className="space-y-2">
+                                        <button
+                                            onClick={() => {
+                                                setChatToDelete(selectedChat);
+                                                setShowDeleteModal(true);
+                                                setShowProfileModal(false);
+                                            }}
+                                            className="w-full p-3 text-left hover:bg-red-50 transition rounded-lg flex items-center gap-3 text-red-600"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                            Chat verbergen
+                                        </button>
+                                        
+                                        <button
+                                            onClick={() => {
+                                                alert('Meldingsopties worden binnenkort toegevoegd');
+                                                setShowProfileModal(false);
+                                            }}
+                                            className="w-full p-3 text-left hover:bg-gray-50 transition rounded-lg flex items-center gap-3 text-gray-700"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                            </svg>
+                                            Meldingen
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

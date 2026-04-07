@@ -67,5 +67,20 @@
     }
   ],
   "categories": ["social", "communication"],
-  "screenshots": []
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Chattery Desktop View"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Chattery Mobile View"
+    }
+  ]
 }

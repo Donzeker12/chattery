@@ -9,6 +9,9 @@ use Inertia\Inertia;
 
 // Public routes
 Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect('/chat');
+    }
     return redirect('/login');
 })->name('home');
 

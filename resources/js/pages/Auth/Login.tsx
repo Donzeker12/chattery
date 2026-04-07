@@ -1,12 +1,32 @@
-import { FormEvent, useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { FormEvent, useState, useEffect } from 'react';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+
+interface PageProps {
+    auth?: {
+        user?: {
+            id: number;
+            name: string;
+            email: string;
+        };
+    };
+}
 
 export default function Login() {
+    const { auth } = usePage<PageProps>().props;
+    
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
         remember: false,
     });
+
+    // Check if user is already logged in and redirect to chat
+    useEffect(() => {
+        if (auth?.user) {
+            router.visit('/chat');
+        }
+    }, [auth]);
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -95,6 +115,7 @@ export default function Login() {
                     </div>
                 </div>
             </div>
+            <PWAInstallPrompt />
         </>
     );
 }

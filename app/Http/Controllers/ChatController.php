@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendPushNotification;
 use App\Models\Chat;
 use App\Models\Message;
 use App\Models\Reaction;
@@ -212,6 +213,10 @@ class ChatController extends Controller
             'attachment_type' => $attachmentType,
             'attachment_path' => $attachmentPath,
         ]);
+
+        // Send push notifications to other participant
+        $otherUser = $chat->otherParticipant($user->id);
+        $this->sendPushNotification($otherUser, $user, $message);
 
         return response()->json([
             'message' => [
@@ -555,5 +560,45 @@ class ChatController extends Controller
             'success' => true,
             'message' => 'Gesprek verborgen',
         ]);
+    }
+
+    /**
+     * Send push notification to user about new message.
+     */
+    private function sendPushNotification(User $recipient, User $sender, Message $message): void
+    {
+        // Don't send notifications if user has no subscriptions
+        if ($recipient->pushSubscriptions->isEmpty()) {
+            return;
+        }
+
+        // Create notification content
+        $title = "💬 Nieuw bericht van {$sender->name}";
+        
+        if ($message->attachment_type) {
+            $body = $message->message 
+                ? "{$message->message} 📷"  
+                : "📷 Foto";
+        } else {
+            $body = $message->message ?: "Nieuw bericht";
+        }
+
+        // Limit body length
+        if (strlen($body) > 100) {
+            $body = substr($body, 0, 97) . '...';
+        }
+
+        $data = [
+            'url' => '/chat',
+            'chat_id' => $message->chat_id,
+            'message_id' => $message->id,
+            'sender_id' => $sender->id,
+            'sender_name' => $sender->name,
+        ];
+
+        // Queue push notification for each subscription
+        foreach ($recipient->pushSubscriptions as $subscription) {
+            SendPushNotification::dispatch($subscription, $title, $body, $data);
+        }
     }
 }

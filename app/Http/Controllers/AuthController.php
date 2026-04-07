@@ -18,8 +18,12 @@ class AuthController extends Controller
      * Show the login form.
      */
     public function showLogin(): Response
-    {
-        return Inertia::render('Auth/Login');
+    {        
+        return Inertia::render('Auth/Login', [
+            'auth' => [
+                'user' => Auth::user()
+            ]
+        ]);
     }
 
     /**
@@ -27,7 +31,11 @@ class AuthController extends Controller
      */
     public function showRegister(): Response
     {
-        return Inertia::render('Auth/Register');
+        return Inertia::render('Auth/Register', [
+            'auth' => [
+                'user' => Auth::user()
+            ]
+        ]);
     }
 
     /**
