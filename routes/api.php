@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushNotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +17,9 @@ Route::get('/push/vapid-key', [PushNotificationController::class, 'getVapidPubli
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    
+    // Profile
+    Route::post('/profile/password', [ProfileController::class, 'changePassword']);
     
     // Push notifications
     Route::post('/push/subscribe', [PushNotificationController::class, 'subscribe']);

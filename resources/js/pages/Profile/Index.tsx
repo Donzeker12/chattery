@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, useState, useEffect } from 'react';
 import ProfilePhotoUpload from '@/components/ProfilePhotoUpload';
 
@@ -19,6 +19,13 @@ interface PageProps {
 export default function Profile({ auth }: PageProps) {
     const [user, setUser] = useState(auth.user);
     const [isLoading, setIsLoading] = useState(true);
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+    
+    const { data, setData, post, processing, errors, reset } = useForm({
+        current_password: '',
+        password: '',
+        password_confirmation: '',
+    });
 
     useEffect(() => {
         console.log('Profile component mounted');
@@ -26,6 +33,21 @@ export default function Profile({ auth }: PageProps) {
         console.log('User:', user);
         setIsLoading(false);
     }, []);
+
+    const handlePasswordChange = (e: FormEvent) => {
+        e.preventDefault();
+        
+        post('/profile/password', {
+            onSuccess: () => {
+                alert('Wachtwoord succesvol gewijzigd!');
+                reset();
+                setShowPasswordForm(false);
+            },
+            onError: () => {
+                console.log('Password change errors:', errors);
+            }
+        });
+    };
 
     const handlePhotoUpdate = (newPhotoUrl: string | null) => {
         console.log('Photo updated to:', newPhotoUrl);
@@ -126,6 +148,102 @@ export default function Profile({ auth }: PageProps) {
                                             <span className="font-medium text-gray-800">#{user.id}</span>
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Password Change Section */}
+                                <div className="border-t border-gray-200 pt-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-800">
+                                            Wachtwoord Wijzigen
+                                        </h3>
+                                        <button
+                                            onClick={() => setShowPasswordForm(!showPasswordForm)}
+                                            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                                        >
+                                            {showPasswordForm ? 'Annuleren' : 'Wijzigen'}
+                                        </button>
+                                    </div>
+                                    
+                                    {showPasswordForm && (
+                                        <form onSubmit={handlePasswordChange} className="space-y-4">
+                                            <div>
+                                                <label htmlFor="current_password" className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Huidig wachtwoord
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    id="current_password"
+                                                    value={data.current_password}
+                                                    onChange={(e) => setData('current_password', e.target.value)}
+                                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                                        errors.current_password ? 'border-red-500' : 'border-gray-300'
+                                                    }`}
+                                                    required
+                                                />
+                                                {errors.current_password && (
+                                                    <p className="mt-1 text-sm text-red-600">{errors.current_password}</p>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Nieuw wachtwoord
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    id="password"
+                                                    value={data.password}
+                                                    onChange={(e) => setData('password', e.target.value)}
+                                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                                        errors.password ? 'border-red-500' : 'border-gray-300'
+                                                    }`}
+                                                    required
+                                                />
+                                                {errors.password && (
+                                                    <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Bevestig nieuw wachtwoord
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    id="password_confirmation"
+                                                    value={data.password_confirmation}
+                                                    onChange={(e) => setData('password_confirmation', e.target.value)}
+                                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                                        errors.password_confirmation ? 'border-red-500' : 'border-gray-300'
+                                                    }`}
+                                                    required
+                                                />
+                                                {errors.password_confirmation && (
+                                                    <p className="mt-1 text-sm text-red-600">{errors.password_confirmation}</p>
+                                                )}
+                                            </div>
+
+                                            <div className="flex gap-3 pt-2">
+                                                <button
+                                                    type="submit"
+                                                    disabled={processing}
+                                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                                                >
+                                                    {processing ? 'Wijzigen...' : 'Wachtwoord Wijzigen'}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowPasswordForm(false);
+                                                        reset();
+                                                    }}
+                                                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                                >
+                                                    Annuleren
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
                                 </div>
 
                                 {/* Instructions */}
