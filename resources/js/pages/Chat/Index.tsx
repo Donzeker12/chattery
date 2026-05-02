@@ -561,9 +561,9 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     <div className="p-3 sm:p-4 space-y-4">
                                         {messages.map((message, index) => (
                                             <div key={message.id} className="group">
-                                                <div className={`flex ${message.user.id === auth.user.id ? 'justify-end' : 'justify-start'} mb-4`}>
+                                                <div className={`flex ${message.is_mine ? 'justify-end' : 'justify-start'} mb-4`}>
                                                     <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                                                        message.user.id === auth.user.id 
+                                                        message.is_mine 
                                                             ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white ml-12' 
                                                             : 'bg-white border border-gray-200 text-gray-800 mr-12 shadow-sm'
                                                     }`}>
@@ -592,7 +592,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                             <p className="whitespace-pre-wrap">{message.message}</p>
                                                         )}
                                                         <div className={`text-xs mt-1 ${
-                                                            message.user.id === auth.user.id ? 'text-white/70' : 'text-gray-500'
+                                                            message.is_mine ? 'text-white/70' : 'text-gray-500'
                                                         }`}>
                                                             {new Date(message.created_at).toLocaleTimeString('nl-NL', {
                                                                 hour: '2-digit',
