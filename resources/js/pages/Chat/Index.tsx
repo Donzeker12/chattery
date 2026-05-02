@@ -55,17 +55,37 @@ interface PageProps {
 
 export default function Index({ chats, users, auth }: PageProps) {
     // State declarations
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(() => {
+        // Initialize with proper mobile detection on mount
+        if (typeof window !== 'undefined') {
+            return window.innerWidth < 768;
+        }
+        return false;
+    });
     
     useEffect(() => {
         const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            console.log('Mobile detection:', mobile, 'Width:', window.innerWidth);
         };
         
+        // Check immediately
         checkMobile();
+        
+        // Add resize listener
         window.addEventListener('resize', checkMobile);
         
-        return () => window.removeEventListener('resize', checkMobile);
+        // Also check on viewport size changes (for testing)
+        const observer = new ResizeObserver(() => {
+            checkMobile();
+        });
+        observer.observe(document.body);
+        
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+            observer.disconnect();
+        };
     }, []);
 
     const [selectedChat, setSelectedChat] = useState<number | null>(null);
