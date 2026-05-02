@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { router, usePage } from '@inertiajs/react';
-import axios from 'axios';
+import axios from '@/lib/axios';
 import Avatar from '../../components/Avatar';
 import NotificationManager from '../../components/NotificationManager';
 
