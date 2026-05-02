@@ -24,12 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\IsAdmin::class,
         ]);
 
-        // Enable CORS for API routes and add session support
+        // Enable CORS for API routes and add session support (but disable CSRF for API)
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
             \Illuminate\Session\Middleware\StartSession::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
