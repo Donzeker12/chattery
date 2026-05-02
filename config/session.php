@@ -32,9 +32,9 @@ return [
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 60), // Reduced to 60 minutes for security
+    'lifetime' => (int) env('SESSION_LIFETIME', 1440), // 24 hours for better UX
 
-    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', true), // Sessions expire when browser closes
+    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false), // Keep sessions persistent
 
     /*
     |--------------------------------------------------------------------------

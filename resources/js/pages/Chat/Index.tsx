@@ -464,7 +464,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                             <p className="text-sm text-gray-600 truncate">
                                                 {chat.latest_message.attachment_url ? 
                                                     `📎 ${chat.latest_message.attachment_type === 'image' ? 'Afbeelding' : 'Bestand'}` 
-                                                    : chat.latest_message.content
+                                                    : chat.latest_message.message
                                                 }
                                             </p>
                                         </div>
@@ -588,8 +588,8 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                                 )}
                                                             </div>
                                                         ) : null}
-                                                        {message.content && (
-                                                            <p className="whitespace-pre-wrap">{message.content}</p>
+                                                        {message.message && (
+                                                            <p className="whitespace-pre-wrap">{message.message}</p>
                                                         )}
                                                         <div className={`text-xs mt-1 ${
                                                             message.user.id === auth.user.id ? 'text-white/70' : 'text-gray-500'
