@@ -5,6 +5,15 @@
 
 echo "🚀 Starting Chattery deployment..."
 
+# Install required PHP extensions
+echo "📦 Installing PHP extensions..."
+apt update
+apt install -y php8.2-sqlite3 php8.2-pdo-sqlite php8.2-mysql nginx
+
+# Start services
+systemctl enable nginx php8.2-fpm
+systemctl start nginx php8.2-fpm
+
 # Navigate to the project directory
 cd /var/www/chattery || exit 1
 

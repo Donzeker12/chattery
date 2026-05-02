@@ -8,9 +8,18 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
+    /**
+     * Display the profile page.
+     */
+    public function index()
+    {
+        return Inertia::render('Profile/Index');
+    }
+
     /**
      * Upload or update profile photo.
      */
@@ -105,9 +114,6 @@ class ProfileController extends Controller
             'password' => Hash::make($request->password)
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Wachtwoord succesvol gewijzigd'
-        ]);
+        return back()->with('success', 'Wachtwoord succesvol gewijzigd!');
     }
 }

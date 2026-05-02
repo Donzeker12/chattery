@@ -59,17 +59,8 @@ class ChatController extends Controller
             ->values();
 
         // Get all users except the authenticated user for starting new chats
-        $users = User::where('id', '!=', $user->id)
-            ->select('id', 'name', 'email', 'profile_photo_path')
-            ->get()
-            ->map(function ($u) {
-                return [
-                    'id' => $u->id,
-                    'name' => $u->name,
-                    'email' => $u->email,
-                    'profile_photo_url' => $u->profile_photo_path ? asset('storage/' . $u->profile_photo_path) : null,
-                ];
-            });
+        // Note: We'll load users via search instead of showing all users
+        $users = [];
 
         return Inertia::render('Chat/Index', [
             'chats' => $chats,
@@ -321,6 +312,40 @@ class ChatController extends Controller
         return response()->json([
             'chats' => $chats,
         ]);
+    }
+
+    /**
+     * Search users for starting new chats.
+     */
+    public function searchUsers(Request $request)
+    {
+        $user = Auth::user();
+        $query = $request->get('query', '');
+        
+        if (strlen($query) < 2) {
+            return response()->json(['users' => []]);
+        }
+        
+        // Priority-based search: name matches first, then email starts
+        $users = User::where('id', '!=', $user->id)
+            ->where(function ($q) use ($query) {
+                $q->where('name', 'LIKE', $query . '%')  // Name starts with query
+                  ->orWhere('name', 'LIKE', '% ' . $query . '%')  // Name contains query after space
+                  ->orWhere('email', 'LIKE', $query . '%');  // Email starts with query
+            })
+            ->select('id', 'name', 'email', 'profile_photo_path')
+            ->limit(10)
+            ->get()
+            ->map(function ($u) {
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'profile_photo_url' => $u->profile_photo_path ? asset('storage/' . $u->profile_photo_path) : null,
+                ];
+            });
+        
+        return response()->json(['users' => $users]);
     }
 
     /**

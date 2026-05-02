@@ -40,16 +40,19 @@ export default function PWAInstallPrompt() {
         const handler = (e: Event) => {
             e.preventDefault();
             
-            // Don't show if dismissed recently (within 7 days)
-            const daysSinceLastPrompt = (Date.now() - state.lastPromptTime) / (1000 * 60 * 60 * 24);
-            if (state.wasPromptShownBefore && daysSinceLastPrompt < 7) {
+            // Don't show if dismissed recently (within 1 hour for testing)
+            const hoursSinceLastPrompt = (Date.now() - state.lastPromptTime) / (1000 * 60 * 60);
+            if (state.wasPromptShownBefore && hoursSinceLastPrompt < 1) {
+                console.log('PWA: Too recent, waiting...');
                 return;
             }
             
+            console.log('PWA: beforeinstallprompt event triggered');
             setDeferredPrompt(e as BeforeInstallPromptEvent);
             
             // Show after a short delay to not interrupt user flow
             setTimeout(() => {
+                console.log('PWA: Showing install prompt');
                 setShowInstallPrompt(true);
                 setPwaState(prev => ({ 
                     ...prev, 
@@ -57,7 +60,7 @@ export default function PWAInstallPrompt() {
                     wasPromptShownBefore: true,
                     lastPromptTime: Date.now()
                 }));
-            }, 3000);
+            }, 1000);
         };
 
         window.addEventListener('beforeinstallprompt', handler);

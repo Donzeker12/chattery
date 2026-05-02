@@ -1,6 +1,41 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { FormEvent, useState, useEffect } from 'react';
 import ProfilePhotoUpload from '@/components/ProfilePhotoUpload';
+
+// Success Modal Component
+interface SuccessModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    message: string;
+}
+
+const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, message }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+                <div className="flex items-center mb-4">
+                    <div className="flex-shrink-0">
+                        <svg className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <div className="ml-3">
+                        <h3 className="text-lg font-medium text-gray-900">Gelukt!</h3>
+                    </div>
+                </div>
+                <p className="text-gray-700 mb-6">{message}</p>
+                <button
+                    onClick={onClose}
+                    className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                    OK
+                </button>
+            </div>
+        </div>
+    );
+};
 
 interface User {
     id: number;
@@ -16,10 +51,12 @@ interface PageProps {
     };
 }
 
-export default function Profile({ auth }: PageProps) {
+export default function Profile() {
+    const { auth, flash } = usePage<PageProps & { flash: { success?: string } }>().props;
     const [user, setUser] = useState(auth.user);
     const [isLoading, setIsLoading] = useState(true);
     const [showPasswordForm, setShowPasswordForm] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
     
     const { data, setData, post, processing, errors, reset } = useForm({
         current_password: '',
@@ -31,15 +68,25 @@ export default function Profile({ auth }: PageProps) {
         console.log('Profile component mounted');
         console.log('Auth:', auth);
         console.log('User:', user);
+        console.log('Flash data:', flash);
         setIsLoading(false);
     }, []);
+
+    // Handle flash messages
+    useEffect(() => {
+        console.log('Flash effect triggered:', flash);
+        if (flash?.success) {
+            console.log('Setting modal to show:', flash.success);
+            setShowSuccessModal(true);
+        }
+    }, [flash]);
 
     const handlePasswordChange = (e: FormEvent) => {
         e.preventDefault();
         
         post('/profile/password', {
-            onSuccess: () => {
-                alert('Wachtwoord succesvol gewijzigd!');
+            onSuccess: (page) => {
+                console.log('Password change successful, page data:', page);
                 reset();
                 setShowPasswordForm(false);
             },
@@ -92,188 +139,192 @@ export default function Profile({ auth }: PageProps) {
                 <div className="container mx-auto px-4 py-8">
                     {/* Header */}
                     <div className="mb-8">
-                        <button
-                            onClick={handleBackToChat}
-                            className="mb-4 text-indigo-600 hover:text-indigo-800 flex items-center gap-2"
-                        >
-                            ← Terug naar chat
-                        </button>
-                        <h1 className="text-3xl font-bold text-gray-800">Profiel Instellingen</h1>
-                    </div>
-
-                    {/* Profile Card */}
-                    <div className="bg-white rounded-2xl shadow-xl overflow-hidden max-w-2xl mx-auto">
-                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-32"></div>
-                        
-                        <div className="px-8 pb-8">
-                            {/* Profile Photo */}
-                            <div className="flex justify-center -mt-12 mb-6">
-                                <ProfilePhotoUpload
-                                    currentPhotoUrl={user.profile_photo_url}
-                                    onPhotoUpdate={handlePhotoUpdate}
-                                />
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h1 className="text-4xl font-bold text-gray-800 mb-2">Profiel Instellingen</h1>
+                                <p className="text-gray-600">Beheer je account instellingen en voorkeuren</p>
                             </div>
-
-                            {/* User Information */}
-                            <div className="text-center mb-8">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-1">
-                                    {user.name}
-                                </h2>
-                                <p className="text-gray-600">{user.email}</p>
-                                {user.is_admin && (
-                                    <span className="inline-block mt-2 px-3 py-1 bg-indigo-100 text-indigo-800 text-sm font-semibold rounded-full">
-                                        👑 Admin
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Profile Info Section */}
-                            <div className="space-y-4">
-                                <div className="border-t border-gray-200 pt-6">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                        Account Informatie
-                                    </h3>
-                                    
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between py-2">
-                                            <span className="text-gray-600">Naam</span>
-                                            <span className="font-medium text-gray-800">{user.name}</span>
-                                        </div>
-                                        <div className="flex justify-between py-2">
-                                            <span className="text-gray-600">Email</span>
-                                            <span className="font-medium text-gray-800">{user.email}</span>
-                                        </div>
-                                        <div className="flex justify-between py-2">
-                                            <span className="text-gray-600">Gebruikers ID</span>
-                                            <span className="font-medium text-gray-800">#{user.id}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Password Change Section */}
-                                <div className="border-t border-gray-200 pt-6">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-lg font-semibold text-gray-800">
-                                            Wachtwoord Wijzigen
-                                        </h3>
-                                        <button
-                                            onClick={() => setShowPasswordForm(!showPasswordForm)}
-                                            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                                        >
-                                            {showPasswordForm ? 'Annuleren' : 'Wijzigen'}
-                                        </button>
-                                    </div>
-                                    
-                                    {showPasswordForm && (
-                                        <form onSubmit={handlePasswordChange} className="space-y-4">
-                                            <div>
-                                                <label htmlFor="current_password" className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Huidig wachtwoord
-                                                </label>
-                                                <input
-                                                    type="password"
-                                                    id="current_password"
-                                                    value={data.current_password}
-                                                    onChange={(e) => setData('current_password', e.target.value)}
-                                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                                                        errors.current_password ? 'border-red-500' : 'border-gray-300'
-                                                    }`}
-                                                    required
-                                                />
-                                                {errors.current_password && (
-                                                    <p className="mt-1 text-sm text-red-600">{errors.current_password}</p>
-                                                )}
-                                            </div>
-
-                                            <div>
-                                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Nieuw wachtwoord
-                                                </label>
-                                                <input
-                                                    type="password"
-                                                    id="password"
-                                                    value={data.password}
-                                                    onChange={(e) => setData('password', e.target.value)}
-                                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                                                        errors.password ? 'border-red-500' : 'border-gray-300'
-                                                    }`}
-                                                    required
-                                                />
-                                                {errors.password && (
-                                                    <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-                                                )}
-                                            </div>
-
-                                            <div>
-                                                <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Bevestig nieuw wachtwoord
-                                                </label>
-                                                <input
-                                                    type="password"
-                                                    id="password_confirmation"
-                                                    value={data.password_confirmation}
-                                                    onChange={(e) => setData('password_confirmation', e.target.value)}
-                                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                                                        errors.password_confirmation ? 'border-red-500' : 'border-gray-300'
-                                                    }`}
-                                                    required
-                                                />
-                                                {errors.password_confirmation && (
-                                                    <p className="mt-1 text-sm text-red-600">{errors.password_confirmation}</p>
-                                                )}
-                                            </div>
-
-                                            <div className="flex gap-3 pt-2">
-                                                <button
-                                                    type="submit"
-                                                    disabled={processing}
-                                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                                                >
-                                                    {processing ? 'Wijzigen...' : 'Wachtwoord Wijzigen'}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setShowPasswordForm(false);
-                                                        reset();
-                                                    }}
-                                                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                                                >
-                                                    Annuleren
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-                                </div>
-
-                                {/* Instructions */}
-                                <div className="border-t border-gray-200 pt-6">
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                        <h4 className="font-semibold text-blue-800 mb-2">
-                                            💡 Tips voor je profielfoto
-                                        </h4>
-                                        <ul className="text-sm text-blue-700 space-y-1">
-                                            <li>• Gebruik een vierkante foto voor het beste resultaat</li>
-                                            <li>• Maximale bestandsgrootte: 5MB</li>
-                                            <li>• Ondersteunde formaten: JPG, PNG, GIF, WebP</li>
-                                            <li>• Klik op je profielfoto om te wijzigen of te verwijderen</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
+                            <button
+                                onClick={handleBackToChat}
+                                className="flex items-center px-4 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-50 transition-colors"
+                            >
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                </svg>
+                                Terug naar Chat
+                            </button>
                         </div>
                     </div>
 
-                    {/* Additional Actions */}
-                    <div className="max-w-2xl mx-auto mt-6 text-center">
-                        <button
-                            onClick={() => router.post('/logout')}
-                            className="text-red-600 hover:text-red-800 font-medium"
-                        >
-                            🚪 Uitloggen
-                        </button>
+                    {/* Main Content */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Profile Photo Section */}
+                        <div className="bg-white rounded-xl shadow-lg p-6">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                                <svg className="w-6 h-6 mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                Profielfoto
+                            </h2>
+                            
+                            <div className="space-y-6">
+                                <ProfilePhotoUpload
+                                    initialPhotoUrl={user.profile_photo_url}
+                                    userName={user.name}
+                                    onPhotoUpdate={handlePhotoUpdate}
+                                />
+                                
+                                <div className="text-center">
+                                    <h3 className="text-xl font-semibold text-gray-800">{user.name}</h3>
+                                    <p className="text-gray-600">{user.email}</p>
+                                    {user.is_admin && (
+                                        <span className="inline-block mt-2 px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
+                                            Administrator
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Account Settings Section */}
+                        <div className="bg-white rounded-xl shadow-lg p-6">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                                <svg className="w-6 h-6 mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                Account Beveiliging
+                            </h2>
+
+                            {/* Account Information */}
+                            <div className="space-y-4 mb-6">
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Gebruikersnaam</label>
+                                    <p className="text-gray-900">{user.name}</p>
+                                </div>
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                                    <p className="text-gray-900">{user.email}</p>
+                                </div>
+                            </div>
+
+                            {/* Password Change Section */}
+                            <div className="border-t border-gray-200 pt-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-semibold text-gray-800">Wachtwoord Wijzigen</h3>
+                                    {!showPasswordForm && (
+                                        <button
+                                            onClick={() => setShowPasswordForm(true)}
+                                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        >
+                                            Wijzigen
+                                        </button>
+                                    )}
+                                </div>
+
+                                {showPasswordForm && (
+                                    <form onSubmit={handlePasswordChange} className="space-y-4">
+                                        <div>
+                                            <label htmlFor="current_password" className="block text-sm font-medium text-gray-700 mb-1">
+                                                Huidig wachtwoord
+                                            </label>
+                                            <input
+                                                type="password"
+                                                id="current_password"
+                                                value={data.current_password}
+                                                onChange={(e) => setData('current_password', e.target.value)}
+                                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                                    errors.current_password ? 'border-red-500' : 'border-gray-300'
+                                                }`}
+                                                required
+                                            />
+                                            {errors.current_password && (
+                                                <p className="mt-1 text-sm text-red-600">{errors.current_password}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                                                Nieuw wachtwoord
+                                            </label>
+                                            <input
+                                                type="password"
+                                                id="password"
+                                                value={data.password}
+                                                onChange={(e) => setData('password', e.target.value)}
+                                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                                    errors.password ? 'border-red-500' : 'border-gray-300'
+                                                }`}
+                                                required
+                                            />
+                                            {errors.password && (
+                                                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700 mb-1">
+                                                Bevestig nieuw wachtwoord
+                                            </label>
+                                            <input
+                                                type="password"
+                                                id="password_confirmation"
+                                                value={data.password_confirmation}
+                                                onChange={(e) => setData('password_confirmation', e.target.value)}
+                                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                                    errors.password_confirmation ? 'border-red-500' : 'border-gray-300'
+                                                }`}
+                                                required
+                                            />
+                                            {errors.password_confirmation && (
+                                                <p className="mt-1 text-sm text-red-600">{errors.password_confirmation}</p>
+                                            )}
+                                        </div>
+
+                                        <div className="flex gap-3 pt-2">
+                                            <button
+                                                type="submit"
+                                                disabled={processing}
+                                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                                            >
+                                                {processing ? 'Wijzigen...' : 'Wachtwoord Wijzigen'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowPasswordForm(false);
+                                                    reset();
+                                                }}
+                                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                            >
+                                                Annuleren
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
+                            </div>
+
+                            {/* Instructions */}
+                            <div className="border-t border-gray-200 pt-6">
+                                <h4 className="text-md font-semibold text-gray-800 mb-2">Wachtwoord Vereisten</h4>
+                                <ul className="text-sm text-gray-600 space-y-1">
+                                    <li>• Minimaal 8 karakters lang</li>
+                                    <li>• Gebruik een uniek wachtwoord</li>
+                                    <li>• Combineer letters, cijfers en symbolen</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                {/* Success Modal */}
+                <SuccessModal 
+                    isOpen={showSuccessModal}
+                    onClose={() => {
+                        console.log('Closing modal');
+                        setShowSuccessModal(false);
+                    }}
+                    message={flash?.success || ''}
+                />
             </div>
         </>
     );

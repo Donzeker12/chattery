@@ -1,1 +1,0 @@
-// Backup of original Index.tsx before fixing JSX structure

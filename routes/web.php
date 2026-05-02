@@ -27,9 +27,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
     // Profile routes
-    Route::get('/profile', function () {
-        return Inertia::render('Profile/Index');
-    })->name('profile');
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
     Route::post('/profile/photo', [ProfileController::class, 'uploadPhoto'])->name('profile.photo.upload');
     Route::delete('/profile/photo', [ProfileController::class, 'deletePhoto'])->name('profile.photo.delete');
     Route::get('/profile/photo', [ProfileController::class, 'getPhotoUrl'])->name('profile.photo.get');
@@ -37,10 +35,16 @@ Route::middleware('auth')->group(function () {
     
     Route::get('/chat', [ChatController::class, 'index'])->name('chat');
     Route::get('/chat/list', [ChatController::class, 'getChatList'])->name('chat.list');
+    Route::get('/chat/search-users', [ChatController::class, 'searchUsers'])->name('chat.search-users');
     Route::get('/chat/{chat}', [ChatController::class, 'show'])->name('chat.show');
     Route::post('/chat/{chat}/message', [ChatController::class, 'sendMessage'])->name('chat.message');
     Route::post('/chat/start', [ChatController::class, 'startChat'])->name('chat.start');
     Route::delete('/chat/{chat}', [ChatController::class, 'deleteChat'])->name('chat.delete');
+    
+    // Push notifications
+    Route::get('/push/vapid-key', [App\Http\Controllers\PushNotificationController::class, 'getVapidPublicKey'])->name('push.vapid-key');
+    Route::post('/push/subscribe', [App\Http\Controllers\PushNotificationController::class, 'subscribe'])->name('push.subscribe');
+    Route::post('/push/unsubscribe', [App\Http\Controllers\PushNotificationController::class, 'unsubscribe'])->name('push.unsubscribe');
     
     // Message actions
     Route::delete('/message/{message}/delete-for-me', [ChatController::class, 'deleteMessageForMe'])->name('message.delete-for-me');
