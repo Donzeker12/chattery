@@ -319,12 +319,12 @@ export default function Index({ chats, users, auth }: PageProps) {
 
     return (
         <>
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex">
-                {/* Modern Glass Sidebar */}
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+                {/* Modern Fixed Glass Sidebar */}
                 <div className={`${
                     isMobile 
-                        ? (selectedChat ? 'hidden' : 'w-full') 
-                        : 'w-80'
+                        ? (selectedChat ? 'hidden' : 'fixed inset-y-0 left-0 w-full z-30') 
+                        : 'fixed inset-y-0 left-0 w-80 z-30'
                     } backdrop-blur-xl bg-white/30 border-r border-white/20 shadow-2xl flex flex-col`}>
                     
                     {/* Modern Header with Gradient */}
@@ -488,12 +488,14 @@ export default function Index({ chats, users, auth }: PageProps) {
                 <div className={`${
                     isMobile 
                         ? (selectedChat ? 'w-full' : 'hidden') 
-                        : 'flex-1'
-                    } flex flex-col backdrop-blur-xl bg-white/5`}>
+                        : 'ml-80 flex-1'
+                    } flex flex-col backdrop-blur-xl bg-white/5 min-h-screen`}>
                     {/* Header */}
                     {selectedChat && currentParticipant ? (
                         <>
-                            <div className="bg-white border-b border-gray-200 p-3 sm:p-4 flex items-center gap-3 sm:gap-4 shadow-sm">
+                            <div className={`bg-white border-b border-gray-200 p-3 sm:p-4 flex items-center gap-3 sm:gap-4 shadow-sm ${
+                                isMobile ? 'sticky top-0 z-20' : ''
+                            }`}>
                                 {/* Mobile back button */}
                                 {isMobile && (
                                     <button
@@ -552,7 +554,9 @@ export default function Index({ chats, users, auth }: PageProps) {
                             </div>
 
                             {/* Messages container */}
-                            <div className="flex-1 overflow-y-auto">
+                            <div className={`flex-1 overflow-y-auto ${
+                                isMobile ? 'pb-20' : ''
+                            }`}>
                                 {loadingMessages ? (
                                     <div className="flex items-center justify-center h-32">
                                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -646,7 +650,9 @@ export default function Index({ chats, users, auth }: PageProps) {
                             </div>
 
                             {/* Input area */}
-                            <div className="border-t border-gray-200 bg-white p-3 sm:p-4">
+                            <div className={`border-t border-gray-200 bg-white p-3 sm:p-4 ${
+                                isMobile ? 'sticky bottom-0 z-20' : ''
+                            }`}>
                                 <form onSubmit={sendMessage} className="space-y-3">
                                     <div className="flex items-center gap-2 sm:gap-3">
                                         <input 
