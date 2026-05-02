@@ -124,10 +124,12 @@ async function cacheFirst(request, cacheName) {
 async function staleWhileRevalidate(request, cacheName) {
   const cacheResponse = await caches.match(request);
   
-  const networkResponsePromise = fetch(request).then(networkResponse => {
+  const networkResponsePromise = fetch(request).then(async networkResponse => {
     if (networkResponse.status === 200) {
-      const cache = caches.open(cacheName);
-      cache.then(c => c.put(request, networkResponse.clone()));
+      // Clone BEFORE any other operations
+      const responseClone = networkResponse.clone();
+      const cache = await caches.open(cacheName);
+      await cache.put(request, responseClone);
     }
     return networkResponse;
   }).catch(() => {
@@ -135,7 +137,7 @@ async function staleWhileRevalidate(request, cacheName) {
     return cacheResponse;
   });
   
-  return cacheResponse || networkResponsePromise;
+  return cacheResponse || await networkResponsePromise;
 }
 
 // Enhanced push notification handling
