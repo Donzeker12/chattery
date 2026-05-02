@@ -112,7 +112,7 @@ export default function Index({ chats, users, auth }: PageProps) {
         setLoadingMessages(true);
         setMessages([]);
         try {
-            const response = await axios.get(`/api/chats/${chatId}/messages`);
+            const response = await axios.get(`/api/chats/${chatId}`);
             setMessages(response.data.messages || []);
             
             // Only update participant if we got one from the API and don't already have one
@@ -129,7 +129,7 @@ export default function Index({ chats, users, auth }: PageProps) {
     const refreshMessages = async () => {
         if (!selectedChat) return;
         try {
-            const response = await axios.get(`/api/chats/${selectedChat}/messages`);
+            const response = await axios.get(`/api/chats/${selectedChat}`);
             setMessages(response.data.messages || []);
         } catch (error) {
             console.error('Error refreshing messages:', error);
@@ -207,8 +207,16 @@ export default function Index({ chats, users, auth }: PageProps) {
 
         setIsSearching(true);
         try {
-            const response = await axios.get(`/api/users/search?q=${encodeURIComponent(query)}`);
-            setSearchResults(response.data || []);
+            const response = await axios.get(`/api/users`);
+            const allUsers = response.data.users || [];
+            
+            // Filter users based on query (client-side search)
+            const filteredUsers = allUsers.filter((user: any) => 
+                user.name.toLowerCase().includes(query.toLowerCase()) ||
+                user.email.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            setSearchResults(filteredUsers);
         } catch (error) {
             console.error('Error searching users:', error);
             setSearchResults([]);
@@ -219,7 +227,7 @@ export default function Index({ chats, users, auth }: PageProps) {
 
     const createChat = async (userId: number) => {
         try {
-            const response = await axios.post('/api/chats', { 
+            const response = await axios.post('/api/chats/start', { 
                 user_id: userId 
             });
             
