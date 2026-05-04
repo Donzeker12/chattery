@@ -162,18 +162,23 @@ export default function Index({ chats, users, auth }: PageProps) {
         setIsAtBottom(true);
     };
 
-    // Auto-scroll when messages change (instant voor snelste UX)
+    // Auto-scroll when messages change - only if user is already at bottom
     useEffect(() => {
         if (messages.length > 0) {
-            scrollToBottom(); // altijd instant
+            // Only auto-scroll if user is already at the bottom
+            // This prevents interrupting users who are reading older messages
+            if (isAtBottom) {
+                scrollToBottom();
+            }
         }
-    }, [messages]);
+    }, [messages, isAtBottom]);
 
-    // Auto-scroll immediately when chat opens
+    // Auto-scroll immediately when chat opens (always scroll to bottom for new chats)
     useEffect(() => {
         if (selectedChat && messages.length > 0) {
-            // Directe scroll zonder delay
+            // Always scroll to bottom when opening a different chat
             scrollToBottom();
+            setIsAtBottom(true); // Ensure we're marked as at bottom
         }
     }, [selectedChat]);
     
