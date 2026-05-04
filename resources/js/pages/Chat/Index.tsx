@@ -136,24 +136,23 @@ export default function Index({ chats, users, auth }: PageProps) {
         };
     }, [showDeleteMenu]);
 
-    const scrollToBottom = (instant = false) => {
-        messagesEndRef.current?.scrollIntoView({ 
-            behavior: instant ? 'instant' : 'smooth' 
-        });
+    const scrollToBottom = () => {
+        // Gebruik instant scroll altijd voor snelste respons
+        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
     };
 
-    // Auto-scroll when messages change (smooth for new messages)
+    // Auto-scroll when messages change (instant voor snelste UX)
     useEffect(() => {
         if (messages.length > 0) {
-            scrollToBottom(false); // smooth for new messages
+            scrollToBottom(); // altijd instant
         }
     }, [messages]);
 
     // Auto-scroll immediately when chat opens
     useEffect(() => {
         if (selectedChat && messages.length > 0) {
-            // Instant scroll when opening chat
-            setTimeout(() => scrollToBottom(true), 100);
+            // Directe scroll zonder delay
+            scrollToBottom();
         }
     }, [selectedChat]);
     
@@ -193,8 +192,8 @@ export default function Index({ chats, users, auth }: PageProps) {
                 setCurrentParticipant(response.data.participant);
             }
             
-            // Scroll to bottom immediately after loading chat
-            setTimeout(() => scrollToBottom(true), 200);
+            // Scroll to bottom direct na loading zonder delay
+            scrollToBottom();
         } catch (error) {
             console.error('Error loading chat:', error);
         } finally {
@@ -271,8 +270,8 @@ export default function Index({ chats, users, auth }: PageProps) {
             }
             await refreshMessages();
             await refreshChatList();
-            // Scroll to show new message
-            setTimeout(() => scrollToBottom(false), 100);
+            // Direct scroll naar nieuw bericht zonder delay
+            scrollToBottom();
         } catch (error: any) {
             console.error('Error sending message:', error);
             
