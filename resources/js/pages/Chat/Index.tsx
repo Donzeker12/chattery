@@ -113,6 +113,7 @@ export default function Index({ chats, users, auth }: PageProps) {
         background: 'gradient'
     });
     const [forceInputKey, setForceInputKey] = useState(0);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -201,6 +202,7 @@ export default function Index({ chats, users, auth }: PageProps) {
             });
 
             setNewMessage('');
+            setSelectedFile(null);
             setForceInputKey(prev => prev + 1); // Force re-render to clear input
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
@@ -342,6 +344,29 @@ export default function Index({ chats, users, auth }: PageProps) {
         const file = e.target.files?.[0];
         if (file) {
             console.log('File selected:', file.name);
+            
+            // Validate file size (10MB limit)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                alert('Bestand is te groot. Maximum grootte is 10MB.');
+                e.target.value = ''; // Clear the input
+                return;
+            }
+            
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Bestandstype niet toegestaan. Alleen afbeeldingen zijn toegestaan (JPG, PNG, GIF, WebP).');
+                e.target.value = ''; // Clear the input
+                return;
+            }
+            
+            // Store the selected file and show feedback
+            setSelectedFile(file);
+            setNewMessage(`📎 ${file.name} - klik verzenden om te uploaden`);
+        } else {
+            // File was cleared
+            setSelectedFile(null);
         }
     };
 
@@ -737,6 +762,30 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                         </div>
                                                     </div>
                                                 )}
+                                                
+                                                {/* File preview indicator */}
+                                                {selectedFile && (
+                                                    <div className="absolute bottom-full left-0 mb-2 z-10">
+                                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 flex items-center gap-2 text-sm">
+                                                            <span className="text-blue-600">📎</span>
+                                                            <span className="text-blue-800">{selectedFile.name}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedFile(null);
+                                                                    setNewMessage('');
+                                                                    if (fileInputRef.current) {
+                                                                        fileInputRef.current.value = '';
+                                                                    }
+                                                                }}
+                                                                className="text-blue-600 hover:text-blue-800 ml-2"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
                                                 <textarea
                                                     key={forceInputKey}
                                                     value={newMessage}
