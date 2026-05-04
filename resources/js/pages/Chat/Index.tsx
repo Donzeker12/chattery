@@ -188,9 +188,8 @@ export default function Index({ chats, users, auth }: PageProps) {
         
         try {
             const formData = new FormData();
-            if (messageContent) {
-                formData.append('message', messageContent);
-            }
+            // Always append message field, even if empty
+            formData.append('message', messageContent);
             if (file) {
                 formData.append('attachment', file);
             }
