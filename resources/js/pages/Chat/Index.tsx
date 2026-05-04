@@ -136,14 +136,38 @@ export default function Index({ chats, users, auth }: PageProps) {
         };
     }, [showDeleteMenu]);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = (instant = false) => {
+        messagesEndRef.current?.scrollIntoView({ 
+            behavior: instant ? 'instant' : 'smooth' 
+        });
     };
 
+    // Auto-scroll when messages change (smooth for new messages)
     useEffect(() => {
-        scrollToBottom();
+        if (messages.length > 0) {
+            scrollToBottom(false); // smooth for new messages
+        }
     }, [messages]);
+
+    // Auto-scroll immediately when chat opens
+    useEffect(() => {
+        if (selectedChat && messages.length > 0) {
+            // Instant scroll when opening chat
+            setTimeout(() => scrollToBottom(true), 100);
+        }
+    }, [selectedChat]);
     
+    // Auto-refresh messages every 3 seconds when chat is open
+    useEffect(() => {
+        if (!selectedChat) return;
+        
+        const interval = setInterval(() => {
+            refreshMessages();
+        }, 3000);
+        
+        return () => clearInterval(interval);
+    }, [selectedChat]);
+
     // Cleanup preview URL on component unmount
     useEffect(() => {
         return () => {
@@ -168,6 +192,9 @@ export default function Index({ chats, users, auth }: PageProps) {
             if (response.data.participant && !currentParticipant) {
                 setCurrentParticipant(response.data.participant);
             }
+            
+            // Scroll to bottom immediately after loading chat
+            setTimeout(() => scrollToBottom(true), 200);
         } catch (error) {
             console.error('Error loading chat:', error);
         } finally {
@@ -244,6 +271,8 @@ export default function Index({ chats, users, auth }: PageProps) {
             }
             await refreshMessages();
             await refreshChatList();
+            // Scroll to show new message
+            setTimeout(() => scrollToBottom(false), 100);
         } catch (error: any) {
             console.error('Error sending message:', error);
             
