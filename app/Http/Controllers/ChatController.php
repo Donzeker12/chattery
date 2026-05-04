@@ -122,8 +122,9 @@ class ChatController extends Controller
                 return [
                     'id' => $message->id,
                     'message' => $message->message,
+                    'content' => $message->message, // Add content field for frontend compatibility
                     'attachment_type' => $message->attachment_type,
-                    'attachment_path' => $message->attachment_path ? asset('storage/' . $message->attachment_path) : null,
+                    'attachment_url' => $message->attachment_path ? asset('storage/' . $message->attachment_path) : null, // Change to attachment_url
                     'is_mine' => $message->user_id === $user->id,
                     'created_at' => $message->created_at,
                     'edited_at' => $message->edited_at,

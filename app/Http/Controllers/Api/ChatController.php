@@ -40,6 +40,9 @@ class ChatController extends Controller
                     ],
                     'latest_message' => $chat->latestMessage ? [
                         'message' => $chat->latestMessage->message,
+                        'content' => $chat->latestMessage->message, // Add content field for frontend compatibility
+                        'attachment_url' => $chat->latestMessage->attachment_path ? asset('storage/' . $chat->latestMessage->attachment_path) : null,
+                        'attachment_type' => $chat->latestMessage->attachment_type,
                         'created_at' => $chat->latestMessage->created_at->toIso8601String(),
                         'is_mine' => $chat->latestMessage->user_id === $user->id,
                     ] : null,
@@ -87,8 +90,9 @@ class ChatController extends Controller
                 return [
                     'id' => $message->id,
                     'message' => $message->message,
+                    'content' => $message->message, // Add content field for frontend compatibility
                     'attachment_type' => $message->attachment_type,
-                    'attachment_path' => $message->attachment_path ? asset('storage/' . $message->attachment_path) : null,
+                    'attachment_url' => $message->attachment_path ? asset('storage/' . $message->attachment_path) : null, // Change to attachment_url
                     'is_mine' => $message->user_id === $user->id,
                     'created_at' => $message->created_at->toIso8601String(),
                     'edited_at' => $message->edited_at?->toIso8601String(),
