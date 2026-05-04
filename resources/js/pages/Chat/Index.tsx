@@ -99,7 +99,7 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showEmojiPickerForMessage, setShowEmojiPickerForMessage] = useState<number | null>(null);
     const [showNewChatModal, setShowNewChatModal] = useState(false);
-    const [chatsList, setChatsList] = useState<Chat[]>(chats);
+    const [chatsList, setChatsList] = useState<Chat[]>(Array.isArray(chats) ? chats : []);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);

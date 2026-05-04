@@ -56,7 +56,8 @@ class ChatController extends Controller
             ->sortByDesc(function ($chat) {
                 return $chat['latest_message']['created_at']?->timestamp ?? 0;
             })
-            ->values();
+            ->values()
+            ->toArray();
 
         // Get all users except the authenticated user for starting new chats
         // Note: We'll load users via search instead of showing all users
