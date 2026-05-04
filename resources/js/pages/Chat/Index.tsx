@@ -706,118 +706,132 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     <div className="p-3 sm:p-4 space-y-4">
                                         {messages.map((message, index) => (
                                             <div key={message.id} className="group">
-                                                <div className={`flex ${message.is_mine ? 'justify-end' : 'justify-start'} mb-4`}>
-                                                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                                                        message.is_mine 
-                                                            ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white ml-12' 
-                                                            : 'bg-white border border-gray-200 text-gray-800 mr-12 shadow-sm'
-                                                    }`}>
-                                                        {message.attachment_url ? (
-                                                            <div className="mb-2">
-                                                                {message.attachment_type === 'image' ? (
-                                                                    <img 
-                                                                        src={message.attachment_url} 
-                                                                        alt="Attachment"
-                                                                        className="rounded-lg max-w-full cursor-pointer"
-                                                                        onClick={() => setFullscreenImage && setFullscreenImage(message.attachment_url || null)}
-                                                                    />
-                                                                ) : (
-                                                                    <a 
-                                                                        href={message.attachment_url} 
-                                                                        target="_blank" 
-                                                                        rel="noopener noreferrer"
-                                                                        className="text-blue-500 underline"
-                                                                    >
-                                                                        📎 Bestand
-                                                                    </a>
-                                                                )}
-                                                            </div>
-                                                        ) : null}
-                                                        {message.message && (
-                                                            <p className="whitespace-pre-wrap">{message.message}</p>
-                                                        )}
-                                                        <div className={`text-xs mt-1 ${
-                                                            message.is_mine ? 'text-white/70' : 'text-gray-500'
+                                                <div className={`flex ${message.is_mine ? 'justify-end' : 'justify-start'} mb-2`}>
+                                                    <div className={`flex flex-col ${message.is_mine ? 'items-end' : 'items-start'} max-w-xs lg:max-w-md`}>
+                                                        <div className={`px-4 py-2 rounded-2xl ${
+                                                            message.is_mine 
+                                                                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white' 
+                                                                : 'bg-white border border-gray-200 text-gray-800 shadow-sm'
                                                         }`}>
-                                                            {new Date(message.created_at).toLocaleTimeString('nl-NL', {
-                                                                hour: '2-digit',
-                                                                minute: '2-digit'
-                                                            })}
+                                                            {message.attachment_url ? (
+                                                                <div className="mb-2">
+                                                                    {message.attachment_type === 'image' ? (
+                                                                        <img 
+                                                                            src={message.attachment_url} 
+                                                                            alt="Attachment"
+                                                                            className="rounded-lg max-w-full cursor-pointer"
+                                                                            onClick={() => setFullscreenImage && setFullscreenImage(message.attachment_url || null)}
+                                                                        />
+                                                                    ) : (
+                                                                        <a 
+                                                                            href={message.attachment_url} 
+                                                                            target="_blank" 
+                                                                            rel="noopener noreferrer"
+                                                                            className="text-blue-500 underline"
+                                                                        >
+                                                                            📎 Bestand
+                                                                        </a>
+                                                                    )}
+                                                                </div>
+                                                            ) : null}
+                                                            {message.message && (
+                                                                <p className="whitespace-pre-wrap">{message.message}</p>
+                                                            )}
+                                                            <div className={`text-xs mt-1 ${
+                                                                message.is_mine ? 'text-white/70' : 'text-gray-500'
+                                                            }`}>
+                                                                {new Date(message.created_at).toLocaleTimeString('nl-NL', {
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                })}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => setShowEmojiPickerForMessage(message.id)}
-                                                        className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition flex items-center gap-1"
-                                                    >
-                                                        <span>😊</span>
-                                                        <span>Reactie</span>
-                                                    </button>
-                                                    <div className="relative delete-menu-container">
-                                                        <button
-                                                            onClick={() => setShowDeleteMenu(showDeleteMenu === message.id ? null : message.id)}
-                                                            className="text-xs text-gray-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition flex items-center gap-1"
-                                                        >
-                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                            </svg>
-                                                            <span>Verwijder</span>
-                                                        </button>
-                                                        {showDeleteMenu === message.id && (
-                                                            <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 z-50 min-w-[200px]">
+                                                        
+                                                        {/* Hover opties - nu correct gepositioneerd */}
+                                                        <div className={`flex items-center gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity ${
+                                                            message.is_mine ? 'flex-row-reverse' : 'flex-row'
+                                                        }`}>
+                                                            <button
+                                                                onClick={() => setShowEmojiPickerForMessage(message.id)}
+                                                                className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition flex items-center gap-1"
+                                                            >
+                                                                <span>😊</span>
+                                                                <span>Reactie</span>
+                                                            </button>
+                                                            <div className="relative delete-menu-container">
                                                                 <button
-                                                                    onClick={() => setShowDeleteConfirm({messageId: message.id, type: 'me'})}
-                                                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition flex items-center gap-2"
+                                                                    onClick={() => setShowDeleteMenu(showDeleteMenu === message.id ? null : message.id)}
+                                                                    className="text-xs text-gray-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition flex items-center gap-1"
                                                                 >
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 17M9.878 9.878l-3-3m12.121 12.121L21 21" />
+                                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                                     </svg>
-                                                                    Verwijder voor mezelf
+                                                                    <span>Verwijder</span>
                                                                 </button>
-                                                                {message.is_mine && (
-                                                                    <button
-                                                                        onClick={() => setShowDeleteConfirm({messageId: message.id, type: 'everyone'})}
-                                                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition flex items-center gap-2"
-                                                                    >
-                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                        </svg>
-                                                                        Verwijder voor iedereen
-                                                                    </button>
+                                                                {showDeleteMenu === message.id && (
+                                                                    <div className={`absolute bottom-full mb-2 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 z-50 min-w-[200px] ${
+                                                                        message.is_mine ? 'right-0' : 'left-0'
+                                                                    }`}>
+                                                                        <button
+                                                                            onClick={() => setShowDeleteConfirm({messageId: message.id, type: 'me'})}
+                                                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition flex items-center gap-2"
+                                                                        >
+                                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 17M9.878 9.878l-3-3m12.121 12.121L21 21" />
+                                                                            </svg>
+                                                                            Verwijder voor mezelf
+                                                                        </button>
+                                                                        {message.is_mine && (
+                                                                            <button
+                                                                                onClick={() => setShowDeleteConfirm({messageId: message.id, type: 'everyone'})}
+                                                                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition flex items-center gap-2"
+                                                                            >
+                                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                                </svg>
+                                                                                Verwijder voor iedereen
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
                                                                 )}
                                                             </div>
-                                                        )}
+                                                        </div>
                                                     </div>
-                                                    {showEmojiPickerForMessage === message.id && (
+                                                </div>
+                                                
+                                                {/* Emoji picker - nu correct gepositioneerd */}
+                                                {showEmojiPickerForMessage === message.id && (
+                                                    <div className={`flex ${message.is_mine ? 'justify-end' : 'justify-start'} mb-2`}>
                                                         <div className="relative">
-                                                        <div className="absolute top-0 right-0 transform -translate-y-full bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 z-50 w-80">
-                                                            <div className="flex flex-col gap-3">
-                                                                <div className="flex gap-2 text-sm font-medium text-gray-600 border-b border-gray-200 pb-2">
-                                                                    <span>😀 Emoties</span>
+                                                            <div className={`absolute top-0 transform -translate-y-full bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 z-50 w-80 ${
+                                                                message.is_mine ? 'right-0' : 'left-0'
+                                                            }`}>
+                                                                <div className="flex flex-col gap-3">
+                                                                    <div className="flex gap-2 text-sm font-medium text-gray-600 border-b border-gray-200 pb-2">
+                                                                        <span>😀 Emoties</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-8 gap-2 max-h-40 overflow-y-auto">
+                                                                        {['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '🥰', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤩', '🤔', '🫡', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '🥱', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🫠', '🤑', '😲', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😮‍💨', '😵', '😵‍💫', '🥴', '😠', '😡', '🤬', '🤕', '😷', '🤒', '🤮', '🤧', '🥵', '🥶', '🥳', '🥺', '🦄', '🎉', '🎊', '🔥', '💯', '💖', '💝', '💘', '💕', '💗', '💙', '💚', '💛', '🧡', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💟', '♥️', '💌', '💤', '💢', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💫', '💦', '💨', '🕳️', '💣', '💥', '💢', '💫', '💦', '💨', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🫰', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '👊', '✊', '🤛', '🤜', '👏', '🙌', '🫶', '👐', '🤲', '🤝', '🙏'].map(emoji => (
+                                                                            <button 
+                                                                                key={emoji}
+                                                                                onClick={() => handleEmojiSelect(emoji)}
+                                                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg flex items-center justify-center"
+                                                                            >
+                                                                                {emoji}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => setShowEmojiPickerForMessage(null)}
+                                                                        className="mt-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                                                                    >
+                                                                        Sluiten
+                                                                    </button>
                                                                 </div>
-                                                                <div className="grid grid-cols-8 gap-2 max-h-40 overflow-y-auto">
-                                                                    {['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '🥰', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤩', '🤔', '🫡', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '🥱', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🫠', '🤑', '😲', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😮‍💨', '😵', '😵‍💫', '🥴', '😠', '😡', '🤬', '🤕', '😷', '🤒', '🤮', '🤧', '🥵', '🥶', '🥳', '🥺', '🦄', '🎉', '🎊', '🔥', '💯', '💖', '💝', '💘', '💕', '💗', '💙', '💚', '💛', '🧡', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💟', '♥️', '💌', '💤', '💢', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💫', '💦', '💨', '🕳️', '💣', '💥', '💢', '💫', '💦', '💨', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🫰', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '👊', '✊', '🤛', '🤜', '👏', '🙌', '🫶', '👐', '🤲', '🤝', '🙏'].map(emoji => (
-                                                                        <button 
-                                                                            key={emoji}
-                                                                            onClick={() => handleEmojiSelect(emoji)}
-                                                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg flex items-center justify-center"
-                                                                        >
-                                                                            {emoji}
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                                <button
-                                                                    onClick={() => setShowEmojiPickerForMessage(null)}
-                                                                    className="mt-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                                                                >
-                                                                    Sluiten
-                                                                </button>
                                                             </div>
                                                         </div>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                         <div ref={messagesEndRef} />
