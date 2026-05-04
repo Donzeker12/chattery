@@ -684,7 +684,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                     isMobile 
                         ? (selectedChat ? 'w-full' : 'hidden') 
                         : 'ml-80 flex-1'
-                    } flex flex-col backdrop-blur-xl bg-white/5 min-h-screen`}>
+                    } flex flex-col backdrop-blur-xl bg-white/5 h-screen`}>
                     {/* Header */}
                     {selectedChat && currentParticipant ? (
                         <>
@@ -751,9 +751,10 @@ export default function Index({ chats, users, auth }: PageProps) {
                             {/* Messages container */}
                             <div 
                                 ref={messagesContainerRef}
-                                className={`flex-1 overflow-y-auto ${
+                                className={`overflow-y-auto ${
                                     isMobile ? 'pb-20' : ''
-                                } relative`}
+                                } relative flex-grow`}
+                                style={{ maxHeight: 'calc(100vh - 200px)' }}
                             >
                                 {loadingMessages ? (
                                     <div className="flex items-center justify-center h-32">
