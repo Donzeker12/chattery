@@ -54,7 +54,7 @@ interface PageProps {
 }
 
 export default function Index({ chats, users, auth }: PageProps) {
-    // State declarations
+    // All state declarations first
     const [isMobile, setIsMobile] = useState(() => {
         // Initialize with proper mobile detection on mount
         if (typeof window !== 'undefined') {
@@ -62,7 +62,41 @@ export default function Index({ chats, users, auth }: PageProps) {
         }
         return false;
     });
+    const [selectedChat, setSelectedChat] = useState<number | null>(null);
+    const [currentParticipant, setCurrentParticipant] = useState<User | null>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [loadingMessages, setLoadingMessages] = useState(false);
+    const [newMessage, setNewMessage] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<User[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showEmojiPickerForMessage, setShowEmojiPickerForMessage] = useState<number | null>(null);
+    const [showNewChatModal, setShowNewChatModal] = useState(false);
+    const [chatsList, setChatsList] = useState<Chat[]>(Array.isArray(chats) ? chats : []);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
+    const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [profileUser, setProfileUser] = useState<User | null>(null);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [chatTheme, setChatTheme] = useState('default');
+    const [chatColors, setChatColors] = useState({
+        primary: '#3B82F6',
+        secondary: '#8B5CF6',
+        background: 'gradient'
+    });
+    const [forceInputKey, setForceInputKey] = useState(0);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+    const [showDeleteMenu, setShowDeleteMenu] = useState<number | null>(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<{messageId: number, type: 'me' | 'everyone'} | null>(null);
     
+    // Refs
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Effects
     useEffect(() => {
         const checkMobile = () => {
             const mobile = window.innerWidth < 768;
@@ -101,38 +135,6 @@ export default function Index({ chats, users, auth }: PageProps) {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [showDeleteMenu]);
-
-    const [selectedChat, setSelectedChat] = useState<number | null>(null);
-    const [currentParticipant, setCurrentParticipant] = useState<User | null>(null);
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [loadingMessages, setLoadingMessages] = useState(false);
-    const [newMessage, setNewMessage] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<User[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [showEmojiPickerForMessage, setShowEmojiPickerForMessage] = useState<number | null>(null);
-    const [showNewChatModal, setShowNewChatModal] = useState(false);
-    const [chatsList, setChatsList] = useState<Chat[]>(Array.isArray(chats) ? chats : []);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
-    const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
-    const [showProfileModal, setShowProfileModal] = useState(false);
-    const [profileUser, setProfileUser] = useState<User | null>(null);
-    const [showSettingsModal, setShowSettingsModal] = useState(false);
-    const [chatTheme, setChatTheme] = useState('default');
-    const [chatColors, setChatColors] = useState({
-        primary: '#3B82F6',
-        secondary: '#8B5CF6',
-        background: 'gradient'
-    });
-    const [forceInputKey, setForceInputKey] = useState(0);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
-    const [showDeleteMenu, setShowDeleteMenu] = useState<number | null>(null);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState<{messageId: number, type: 'me' | 'everyone'} | null>(null);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
