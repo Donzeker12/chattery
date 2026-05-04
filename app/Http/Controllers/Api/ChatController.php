@@ -49,7 +49,8 @@ class ChatController extends Controller
             ->sortByDesc(function ($chat) {
                 return $chat['latest_message']['created_at'] ?? 0;
             })
-            ->values();
+            ->values()
+            ->toArray();
 
         return response()->json(['chats' => $chats]);
     }
@@ -98,13 +99,14 @@ class ChatController extends Controller
                         return [
                             'emoji' => $emoji,
                             'count' => $reactions->count(),
-                            'users' => $reactions->map(fn($r) => ['id' => $r->user_id, 'name' => $r->user->name])->values(),
+                            'users' => $reactions->map(fn($r) => ['id' => $r->user_id, 'name' => $r->user->name])->values()->toArray(),
                             'reacted_by_me' => $reactions->contains('user_id', $user->id),
                         ];
-                    })->values(),
+                    })->values()->toArray(),
                 ];
             })
-            ->values();
+            ->values()
+            ->toArray();
 
         $otherUser = $chat->otherParticipant($user->id);
         $isOnline = $otherUser->last_seen_at && $otherUser->last_seen_at >= $onlineThreshold;

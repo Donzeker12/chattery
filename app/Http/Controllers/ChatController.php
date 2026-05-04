@@ -308,7 +308,8 @@ class ChatController extends Controller
             ->sortByDesc(function ($chat) {
                 return $chat['latest_message']['created_at'] ?? $chat['id'];
             })
-            ->values();
+            ->values()
+            ->toArray();
 
         return response()->json([
             'chats' => $chats,
@@ -344,7 +345,8 @@ class ChatController extends Controller
                     'email' => $u->email,
                     'profile_photo_url' => $u->profile_photo_path ? asset('storage/' . $u->profile_photo_path) : null,
                 ];
-            });
+            })
+            ->toArray();
         
         return response()->json(['users' => $users]);
     }

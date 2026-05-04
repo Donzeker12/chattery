@@ -159,7 +159,7 @@ export default function Index({ chats, users, auth }: PageProps) {
     const refreshChatList = async () => {
         try {
             const response = await axios.get('/api/chats');
-            setChatsList(response.data || []);
+            setChatsList(Array.isArray(response.data.chats) ? response.data.chats : []);
         } catch (error) {
             console.error('Error refreshing chat list:', error);
         }
@@ -236,7 +236,7 @@ export default function Index({ chats, users, auth }: PageProps) {
         setIsSearching(true);
         try {
             const response = await axios.get(`/api/users`);
-            const allUsers = response.data.users || [];
+            const allUsers = Array.isArray(response.data.users) ? response.data.users : [];
             
             // Filter users based on query (client-side search)
             const filteredUsers = allUsers.filter((user: any) => 

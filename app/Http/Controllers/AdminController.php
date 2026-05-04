@@ -28,13 +28,13 @@ class AdminController extends Controller
                 'last_seen' => $user->last_seen_at ? $user->last_seen_at->diffForHumans() : 'Nooit',
                 'profile_photo_url' => $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null,
             ];
-        });
+        })->toArray();
 
-        $onlineCount = $users->where('is_online', true)->count();
+        $onlineCount = collect($users)->where('is_online', true)->count();
 
         return Inertia::render('Admin/Index', [
             'users' => $users,
-            'total_users' => $users->count(),
+            'total_users' => count($users),
             'online_users' => $onlineCount,
         ]);
     }
