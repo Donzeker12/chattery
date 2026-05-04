@@ -88,6 +88,20 @@ export default function Index({ chats, users, auth }: PageProps) {
         };
     }, []);
 
+    // Close delete menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showDeleteMenu && !(event.target as Element).closest('.delete-menu-container')) {
+                setShowDeleteMenu(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showDeleteMenu]);
+
     const [selectedChat, setSelectedChat] = useState<number | null>(null);
     const [currentParticipant, setCurrentParticipant] = useState<User | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -115,6 +129,8 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [forceInputKey, setForceInputKey] = useState(0);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+    const [showDeleteMenu, setShowDeleteMenu] = useState<number | null>(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<{messageId: number, type: 'me' | 'everyone'} | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -337,6 +353,30 @@ export default function Index({ chats, users, auth }: PageProps) {
             await refreshMessages();
         } catch (error) {
             console.error('Error removing reaction:', error);
+        }
+    };
+
+    const deleteMessageForMe = async (messageId: number) => {
+        try {
+            await axios.delete(`/api/messages/${messageId}/delete-for-me`);
+            await refreshMessages();
+            setShowDeleteConfirm(null);
+            setShowDeleteMenu(null);
+        } catch (error: any) {
+            console.error('Error deleting message for me:', error);
+            alert('Er is een fout opgetreden bij het verwijderen van het bericht.');
+        }
+    };
+
+    const deleteMessageForEveryone = async (messageId: number) => {
+        try {
+            await axios.delete(`/api/messages/${messageId}/delete-for-everyone`);
+            await refreshMessages();
+            setShowDeleteConfirm(null);
+            setShowDeleteMenu(null);
+        } catch (error: any) {
+            console.error('Error deleting message for everyone:', error);
+            alert('Er is een fout opgetreden bij het verwijderen van het bericht.');
         }
     };
 
@@ -712,6 +752,41 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                         <span>😊</span>
                                                         <span>Reactie</span>
                                                     </button>
+                                                    <div className="relative delete-menu-container">
+                                                        <button
+                                                            onClick={() => setShowDeleteMenu(showDeleteMenu === message.id ? null : message.id)}
+                                                            className="text-xs text-gray-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition flex items-center gap-1"
+                                                        >
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                            <span>Verwijder</span>
+                                                        </button>
+                                                        {showDeleteMenu === message.id && (
+                                                            <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 z-50 min-w-[200px]">
+                                                                <button
+                                                                    onClick={() => setShowDeleteConfirm({messageId: message.id, type: 'me'})}
+                                                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition flex items-center gap-2"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 17M9.878 9.878l-3-3m12.121 12.121L21 21" />
+                                                                    </svg>
+                                                                    Verwijder voor mezelf
+                                                                </button>
+                                                                {message.is_mine && (
+                                                                    <button
+                                                                        onClick={() => setShowDeleteConfirm({messageId: message.id, type: 'everyone'})}
+                                                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition flex items-center gap-2"
+                                                                    >
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                        </svg>
+                                                                        Verwijder voor iedereen
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     {showEmojiPickerForMessage === message.id && (
                                                         <div className="relative">
                                                         <div className="absolute top-0 right-0 transform -translate-y-full bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 z-50 w-80">
@@ -1410,6 +1485,57 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
                                     >
                                         Annuleren
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Delete Message Confirmation Modal */}
+                {showDeleteConfirm && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+                            <div className="p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            {showDeleteConfirm.type === 'everyone' ? 'Bericht voor iedereen verwijderen?' : 'Bericht voor mezelf verwijderen?'}
+                                        </h3>
+                                        <p className="text-sm text-gray-600">
+                                            {showDeleteConfirm.type === 'everyone' 
+                                                ? 'Dit bericht wordt voor alle gespreksdeelnemers verwijderd.' 
+                                                : 'Dit bericht wordt alleen voor jou verborgen.'
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setShowDeleteConfirm(null);
+                                            setShowDeleteMenu(null);
+                                        }}
+                                        className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition"
+                                    >
+                                        Annuleren
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (showDeleteConfirm.type === 'everyone') {
+                                                deleteMessageForEveryone(showDeleteConfirm.messageId);
+                                            } else {
+                                                deleteMessageForMe(showDeleteConfirm.messageId);
+                                            }
+                                        }}
+                                        className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition"
+                                    >
+                                        {showDeleteConfirm.type === 'everyone' ? 'Verwijder voor iedereen' : 'Verwijder voor mezelf'}
                                     </button>
                                 </div>
                             </div>
