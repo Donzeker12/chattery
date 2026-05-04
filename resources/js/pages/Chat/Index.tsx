@@ -114,6 +114,7 @@ export default function Index({ chats, users, auth }: PageProps) {
     });
     const [forceInputKey, setForceInputKey] = useState(0);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -124,6 +125,15 @@ export default function Index({ chats, users, auth }: PageProps) {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+    
+    // Cleanup preview URL on component unmount
+    useEffect(() => {
+        return () => {
+            if (filePreviewUrl) {
+                URL.revokeObjectURL(filePreviewUrl);
+            }
+        };
+    }, [filePreviewUrl]);
 
     const handleLogout = () => {
         router.post('/logout');
@@ -181,11 +191,11 @@ export default function Index({ chats, users, auth }: PageProps) {
     const sendMessage = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         
-        if (!newMessage.trim() && !fileInputRef.current?.files?.[0]) return;
+        if (!newMessage.trim() && !selectedFile) return;
         if (!selectedChat) return;
 
         const messageContent = newMessage.trim();
-        const file = fileInputRef.current?.files?.[0];
+        const file = selectedFile;
         
         try {
             const formData = new FormData();
@@ -203,6 +213,13 @@ export default function Index({ chats, users, auth }: PageProps) {
 
             setNewMessage('');
             setSelectedFile(null);
+            
+            // Clean up preview URL
+            if (filePreviewUrl) {
+                URL.revokeObjectURL(filePreviewUrl);
+                setFilePreviewUrl(null);
+            }
+            
             setForceInputKey(prev => prev + 1); // Force re-render to clear input
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
@@ -361,12 +378,19 @@ export default function Index({ chats, users, auth }: PageProps) {
                 return;
             }
             
-            // Store the selected file and show feedback
+            // Store the selected file and create preview URL
             setSelectedFile(file);
-            setNewMessage(`📎 ${file.name} - klik verzenden om te uploaden`);
+            
+            // Create preview URL for image
+            const previewUrl = URL.createObjectURL(file);
+            setFilePreviewUrl(previewUrl);
+            
+            // Clear message text to focus on image
+            setNewMessage('');
         } else {
             // File was cleared
             setSelectedFile(null);
+            setFilePreviewUrl(null);
         }
     };
 
@@ -766,22 +790,53 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 {/* File preview indicator */}
                                                 {selectedFile && (
                                                     <div className="absolute bottom-full left-0 mb-2 z-10">
-                                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 flex items-center gap-2 text-sm">
-                                                            <span className="text-blue-600">📎</span>
-                                                            <span className="text-blue-800">{selectedFile.name}</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setSelectedFile(null);
-                                                                    setNewMessage('');
-                                                                    if (fileInputRef.current) {
-                                                                        fileInputRef.current.value = '';
-                                                                    }
-                                                                }}
-                                                                className="text-blue-600 hover:text-blue-800 ml-2"
-                                                            >
-                                                                ✕
-                                                            </button>
+                                                        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg max-w-xs">
+                                                            <div className="flex items-start gap-3">
+                                                                {/* Image preview */}
+                                                                {filePreviewUrl && (
+                                                                    <div className="flex-shrink-0">
+                                                                        <img 
+                                                                            src={filePreviewUrl} 
+                                                                            alt="Preview"
+                                                                            className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {/* File info */}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                                                        {selectedFile.name}
+                                                                    </p>
+                                                                    <p className="text-xs text-gray-500">
+                                                                        {(selectedFile.size / 1024 / 1024).toFixed(1)} MB
+                                                                    </p>
+                                                                    <p className="text-xs text-green-600 mt-1">
+                                                                        📎 Klaar om te verzenden
+                                                                    </p>
+                                                                </div>
+                                                                
+                                                                {/* Remove button */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setSelectedFile(null);
+                                                                        if (filePreviewUrl) {
+                                                                            URL.revokeObjectURL(filePreviewUrl);
+                                                                            setFilePreviewUrl(null);
+                                                                        }
+                                                                        setNewMessage('');
+                                                                        if (fileInputRef.current) {
+                                                                            fileInputRef.current.value = '';
+                                                                        }
+                                                                    }}
+                                                                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 )}
