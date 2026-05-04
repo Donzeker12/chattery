@@ -91,10 +91,12 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
     const [showDeleteMenu, setShowDeleteMenu] = useState<number | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<{messageId: number, type: 'me' | 'everyone'} | null>(null);
+    const [isAtBottom, setIsAtBottom] = useState(true);
     
     // Refs
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     // Effects
     useEffect(() => {
@@ -136,9 +138,28 @@ export default function Index({ chats, users, auth }: PageProps) {
         };
     }, [showDeleteMenu]);
 
+    // Check if user is at bottom of messages
+    const checkIfAtBottom = () => {
+        if (messagesContainerRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px tolerance
+            setIsAtBottom(isAtBottom);
+        }
+    };
+
+    // Add scroll listener for messages container
+    useEffect(() => {
+        const container = messagesContainerRef.current;
+        if (container) {
+            container.addEventListener('scroll', checkIfAtBottom);
+            return () => container.removeEventListener('scroll', checkIfAtBottom);
+        }
+    }, [selectedChat]);
+
     const scrollToBottom = () => {
         // Gebruik instant scroll altijd voor snelste respons
         messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+        setIsAtBottom(true);
     };
 
     // Auto-scroll when messages change (instant voor snelste UX)
@@ -723,9 +744,12 @@ export default function Index({ chats, users, auth }: PageProps) {
                             </div>
 
                             {/* Messages container */}
-                            <div className={`flex-1 overflow-y-auto ${
-                                isMobile ? 'pb-20' : ''
-                            }`}>
+                            <div 
+                                ref={messagesContainerRef}
+                                className={`flex-1 overflow-y-auto ${
+                                    isMobile ? 'pb-20' : ''
+                                } relative`}
+                            >
                                 {loadingMessages ? (
                                     <div className="flex items-center justify-center h-32">
                                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -864,6 +888,19 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         ))}
                                         <div ref={messagesEndRef} />
                                     </div>
+                                )}
+                                
+                                {/* Scroll to bottom button */}
+                                {!isAtBottom && (
+                                    <button
+                                        onClick={scrollToBottom}
+                                        className="absolute bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-10"
+                                        title="Ga naar nieuwste berichten"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                        </svg>
+                                    </button>
                                 )}
                             </div>
 
