@@ -189,7 +189,7 @@ export default function Index({ chats, users, auth }: PageProps) {
         try {
             const formData = new FormData();
             if (messageContent) {
-                formData.append('content', messageContent);
+                formData.append('message', messageContent);
             }
             if (file) {
                 formData.append('attachment', file);
@@ -208,8 +208,17 @@ export default function Index({ chats, users, auth }: PageProps) {
             }
             await refreshMessages();
             await refreshChatList();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error sending message:', error);
+            
+            // Show user-friendly error message
+            if (error.response?.status === 422) {
+                alert('Vul een bericht of bijlage in om te verzenden.');
+            } else if (error.response?.status === 403) {
+                alert('Je bent niet geautoriseerd om berichten te verzenden in deze chat.');
+            } else {
+                alert('Er is een fout opgetreden bij het verzenden van je bericht. Probeer het opnieuw.');
+            }
         }
     };
 
