@@ -361,6 +361,8 @@ export default function Index({ chats, users, auth }: PageProps) {
         const file = e.target.files?.[0];
         if (file) {
             console.log('File selected:', file.name);
+            console.log('File type:', file.type);
+            console.log('File size:', file.size);
             
             // Validate file size (10MB limit)
             const maxSize = 10 * 1024 * 1024; // 10MB in bytes
@@ -371,11 +373,30 @@ export default function Index({ chats, users, auth }: PageProps) {
             }
             
             // Validate file type
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            const allowedTypes = [
+                'image/jpeg', 
+                'image/jpg', 
+                'image/png', 
+                'image/gif', 
+                'image/webp',
+                'image/avif',
+                'image/bmp',
+                'image/svg+xml'
+            ];
             if (!allowedTypes.includes(file.type)) {
-                alert('Bestandstype niet toegestaan. Alleen afbeeldingen zijn toegestaan (JPG, PNG, GIF, WebP).');
-                e.target.value = ''; // Clear the input
-                return;
+                // Additional check for WebP files with incorrect MIME type
+                const fileName = file.name.toLowerCase();
+                const webpExtensions = ['.webp', '.avif'];
+                const isWebpFile = webpExtensions.some(ext => fileName.endsWith(ext));
+                
+                if (!isWebpFile) {
+                    console.log('File type rejected:', file.type);
+                    alert('Bestandstype niet toegestaan. Alleen afbeeldingen zijn toegestaan (JPG, PNG, GIF, WebP, AVIF, BMP, SVG).');
+                    e.target.value = ''; // Clear the input
+                    return;
+                } else {
+                    console.log('WebP file detected by extension, allowing...');
+                }
             }
             
             // Store the selected file and create preview URL
@@ -383,6 +404,7 @@ export default function Index({ chats, users, auth }: PageProps) {
             
             // Create preview URL for image
             const previewUrl = URL.createObjectURL(file);
+            console.log('Preview URL created:', previewUrl);
             setFilePreviewUrl(previewUrl);
             
             // Clear message text to focus on image
@@ -737,7 +759,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                             ref={fileInputRef}
                                             onChange={handleFileSelect}
                                             className="hidden"
-                                            accept="image/*,application/pdf,.doc,.docx,.txt"
+                                            accept="image/*,.webp,.avif,.bmp,.svg"
                                         />
                                         <button
                                             type="button"
@@ -799,6 +821,12 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                                             src={filePreviewUrl} 
                                                                             alt="Preview"
                                                                             className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                                                                            onLoad={() => console.log('Image preview loaded successfully')}
+                                                                            onError={(e) => {
+                                                                                console.error('Failed to load image preview:', e);
+                                                                                console.log('Preview URL:', filePreviewUrl);
+                                                                                console.log('Selected file:', selectedFile);
+                                                                            }}
                                                                         />
                                                                     </div>
                                                                 )}

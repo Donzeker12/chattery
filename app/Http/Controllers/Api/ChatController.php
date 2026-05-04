@@ -146,7 +146,7 @@ class ChatController extends Controller
 
         $validated = $request->validate([
             'message' => 'nullable|string|max:5000',
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,avif,bmp,svg|max:10240',
         ]);
 
         // Check if we have either message content OR an attachment
