@@ -134,12 +134,30 @@ class ChatController extends Controller
             return response()->json(['error' => 'Niet geautoriseerd'], 403);
         }
 
+        // Debug logging - temporary
+        \Log::info('SendMessage request data:', [
+            'message' => $request->input('message'),
+            'message_length' => strlen($request->input('message') ?? ''),
+            'has_attachment' => $request->hasFile('attachment'),
+            'all_input' => $request->all(),
+        ]);
+
         $validated = $request->validate([
             'message' => 'nullable|string|max:5000',
             'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
         ]);
 
-        if (empty($validated['message']) && !$request->hasFile('attachment')) {
+        // Check if we have either message content OR an attachment
+        $hasMessage = !empty(trim($validated['message'] ?? ''));
+        $hasAttachment = $request->hasFile('attachment');
+        
+        if (!$hasMessage && !$hasAttachment) {
+            \Log::warning('Message validation failed', [
+                'message' => $validated['message'] ?? 'null',
+                'trimmed_message' => trim($validated['message'] ?? ''),
+                'has_message' => $hasMessage,
+                'has_attachment' => $hasAttachment,
+            ]);
             return response()->json(['error' => 'Bericht of bijlage is verplicht'], 422);
         }
 
