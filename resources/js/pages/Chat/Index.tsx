@@ -92,11 +92,13 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [showDeleteMenu, setShowDeleteMenu] = useState<number | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<{messageId: number, type: 'me' | 'everyone'} | null>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
+    const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
     
     // Refs
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Effects
     useEffect(() => {
@@ -193,6 +195,28 @@ export default function Index({ chats, users, auth }: PageProps) {
         return () => clearInterval(interval);
     }, [selectedChat]);
 
+    // Poll typing status every 2 seconds when chat is open
+    useEffect(() => {
+        if (!selectedChat) return;
+        
+        const checkTypingStatus = async () => {
+            try {
+                const response = await axios.get(`/api/chats/${selectedChat}/typing`);
+                setIsOtherUserTyping(response.data.is_typing);
+            } catch (error) {
+                console.error('Error checking typing status:', error);
+            }
+        };
+        
+        // Check immediately
+        checkTypingStatus();
+        
+        // Then check every 2 seconds
+        const interval = setInterval(checkTypingStatus, 2000);
+        
+        return () => clearInterval(interval);
+    }, [selectedChat]);
+
     // Cleanup preview URL on component unmount
     useEffect(() => {
         return () => {
@@ -201,6 +225,13 @@ export default function Index({ chats, users, auth }: PageProps) {
             }
         };
     }, [filePreviewUrl]);
+
+    // Scroll when typing indicator appears/disappears
+    useEffect(() => {
+        if (isAtBottom) {
+            scrollToBottom();
+        }
+    }, [isOtherUserTyping]);
 
     const handleLogout = () => {
         router.post('/logout');
@@ -246,6 +277,44 @@ export default function Index({ chats, users, auth }: PageProps) {
         }
     };
 
+    const updateTypingStatus = async (isTyping: boolean) => {
+        if (!selectedChat) return;
+        
+        try {
+            await axios.post(`/api/chats/${selectedChat}/typing`, {
+                is_typing: isTyping
+            });
+        } catch (error) {
+            console.error('Error updating typing status:', error);
+        }
+    };
+
+    const handleMessageInputChange = (value: string) => {
+        setNewMessage(value);
+        
+        // Update typing status
+        if (value.trim().length > 0) {
+            // User is typing
+            updateTypingStatus(true);
+            
+            // Clear existing timeout
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+            
+            // Set new timeout to stop typing after 3 seconds of inactivity
+            typingTimeoutRef.current = setTimeout(() => {
+                updateTypingStatus(false);
+            }, 3000);
+        } else {
+            // User cleared the input
+            updateTypingStatus(false);
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+        }
+    };
+
     const openChat = async (chatId: number) => {
         setSelectedChat(chatId);
         
@@ -283,6 +352,12 @@ export default function Index({ chats, users, auth }: PageProps) {
 
             setNewMessage('');
             setSelectedFile(null);
+            
+            // Stop typing indicator
+            updateTypingStatus(false);
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
             
             // Clean up preview URL
             if (filePreviewUrl) {
@@ -355,8 +430,8 @@ export default function Index({ chats, users, auth }: PageProps) {
             setSearchResults([]);
             await refreshChatList();
             
-            if (response.data.chat) {
-                await openChat(response.data.chat.id);
+            if (response.data.chat_id) {
+                await openChat(response.data.chat_id);
             }
         } catch (error) {
             console.error('Error creating chat:', error);
@@ -649,18 +724,23 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-1">
                                                 <h3 className="font-semibold text-gray-900 truncate">{chat.participant.name}</h3>
-                                                <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                                                    {new Date(chat.latest_message.created_at).toLocaleDateString('nl-NL', {
-                                                        day: 'numeric',
-                                                        month: 'short'
-                                                    })}
-                                                </span>
+                                                {chat.latest_message && (
+                                                    <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                                                        {new Date(chat.latest_message.created_at).toLocaleDateString('nl-NL', {
+                                                            day: 'numeric',
+                                                            month: 'short'
+                                                        })}
+                                                    </span>
+                                                )}
                                             </div>
                                             <p className="text-sm text-gray-600 truncate">
-                                                {chat.latest_message.attachment_url ? 
-                                                    `📎 ${chat.latest_message.attachment_type === 'image' ? 'Afbeelding' : 'Bestand'}` 
-                                                    : chat.latest_message.message
-                                                }
+                                                {chat.latest_message ? (
+                                                    chat.latest_message.attachment_url ? 
+                                                        `📎 ${chat.latest_message.attachment_type === 'image' ? 'Afbeelding' : 'Bestand'}` 
+                                                        : chat.latest_message.message
+                                                ) : (
+                                                    <span className="text-gray-400 italic">Nog geen berichten</span>
+                                                )}
                                             </p>
                                         </div>
                                     </div>
@@ -889,6 +969,25 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 )}
                                             </div>
                                         ))}
+                                        
+                                        {/* Typing indicator */}
+                                        {isOtherUserTyping && currentParticipant && (
+                                            <div className="flex items-start space-x-2 mb-4 animate-fade-in">
+                                                <Avatar 
+                                                    photoUrl={currentParticipant.profile_photo_url}
+                                                    name={currentParticipant.name}
+                                                    size="sm" 
+                                                />
+                                                <div className="bg-gray-100 rounded-2xl px-4 py-2 max-w-[70%]">
+                                                    <div className="flex items-center space-x-1">
+                                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
                                         <div ref={messagesEndRef} />
                                     </div>
                                 )}
@@ -1031,7 +1130,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 <textarea
                                                     key={forceInputKey}
                                                     value={newMessage}
-                                                    onChange={(e) => setNewMessage(e.target.value)}
+                                                    onChange={(e) => handleMessageInputChange(e.target.value)}
                                                     onKeyPress={handleKeyPress}
                                                     placeholder="Typ een bericht..."
                                                     className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1139,7 +1238,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 {searchResults.map((user) => (
                                                     <button
                                                         key={user.id}
-                                                        onClick={() => createChat(user)}
+                                                        onClick={() => createChat(user.id)}
                                                         className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
                                                     >
                                                         <div className="flex items-center gap-3">

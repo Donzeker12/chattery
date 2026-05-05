@@ -37,6 +37,10 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::delete('/messages/{message}/delete-for-me', [ChatController::class, 'deleteMessageForMe']);
     Route::delete('/messages/{message}/delete-for-everyone', [ChatController::class, 'deleteMessageForEveryone']);
     
+    // Typing indicator
+    Route::post('/chats/{chat}/typing', [ChatController::class, 'updateTypingStatus']);
+    Route::get('/chats/{chat}/typing', [ChatController::class, 'getTypingStatus']);
+    
     // Reactions
     Route::post('/messages/{message}/reactions', [ChatController::class, 'addReaction']);
     Route::delete('/messages/{message}/reactions/{emoji}', [ChatController::class, 'removeReaction']);

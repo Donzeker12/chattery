@@ -41,6 +41,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/chat/start', [ChatController::class, 'startChat'])->name('chat.start');
     Route::delete('/chat/{chat}', [ChatController::class, 'deleteChat'])->name('chat.delete');
     
+    // Typing indicator
+    Route::post('/chat/{chat}/typing', [ChatController::class, 'updateTypingStatus'])->name('chat.typing.update');
+    Route::get('/chat/{chat}/typing', [ChatController::class, 'getTypingStatus'])->name('chat.typing.get');
+    
     // Push notifications
     Route::get('/push/vapid-key', [App\Http\Controllers\PushNotificationController::class, 'getVapidPublicKey'])->name('push.vapid-key');
     Route::post('/push/subscribe', [App\Http\Controllers\PushNotificationController::class, 'subscribe'])->name('push.subscribe');

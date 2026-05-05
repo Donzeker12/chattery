@@ -10,6 +10,7 @@ use App\Models\Reaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
@@ -378,8 +379,16 @@ class ChatController extends Controller
         $user = Auth::user();
         
         $users = User::where('id', '!=', $user->id)
-            ->select('id', 'name', 'email')
-            ->get();
+            ->select('id', 'name', 'email', 'profile_photo_path')
+            ->get()
+            ->map(function ($u) {
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'profile_photo_url' => $u->profile_photo_path ? asset('storage/' . $u->profile_photo_path) : null,
+                ];
+            });
 
         return response()->json(['users' => $users]);
     }
@@ -422,5 +431,59 @@ class ChatController extends Controller
         foreach ($recipient->pushSubscriptions as $subscription) {
             SendPushNotification::dispatch($subscription, $title, $body, $data);
         }
+    }
+
+    /**
+     * Update typing status for a user in a chat.
+     */
+    public function updateTypingStatus(Request $request, Chat $chat)
+    {
+        $user = Auth::user();
+
+        // Verify user is part of this chat
+        if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'is_typing' => 'required|boolean',
+        ]);
+
+        $cacheKey = "chat.{$chat->id}.user.{$user->id}.typing";
+
+        if ($validated['is_typing']) {
+            // Set typing status for 5 seconds
+            Cache::put($cacheKey, true, now()->addSeconds(5));
+        } else {
+            // Remove typing status
+            Cache::forget($cacheKey);
+        }
+
+        return response()->json([
+            'success' => true,
+        ]);
+    }
+
+    /**
+     * Get typing status for a chat (check if other user is typing).
+     */
+    public function getTypingStatus(Chat $chat)
+    {
+        $user = Auth::user();
+
+        // Verify user is part of this chat
+        if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        // Get the other user
+        $otherUserId = $chat->user_one_id === $user->id ? $chat->user_two_id : $chat->user_one_id;
+        $cacheKey = "chat.{$chat->id}.user.{$otherUserId}.typing";
+
+        $isTyping = Cache::has($cacheKey);
+
+        return response()->json([
+            'is_typing' => $isTyping,
+        ]);
     }
 }

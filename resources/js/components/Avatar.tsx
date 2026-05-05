@@ -1,12 +1,12 @@
 interface AvatarProps {
     photoUrl?: string | null;
-    name: string;
+    name?: string;
     size?: 'sm' | 'md' | 'lg' | 'xl';
     isOnline?: boolean;
     className?: string;
 }
 
-export default function Avatar({ photoUrl, name, size = 'md', isOnline, className = '' }: AvatarProps) {
+export default function Avatar({ photoUrl, name = 'User', size = 'md', isOnline, className = '' }: AvatarProps) {
     const sizeClasses = {
         sm: 'w-8 h-8 text-sm',
         md: 'w-10 h-10 text-base',
@@ -23,6 +23,7 @@ export default function Avatar({ photoUrl, name, size = 'md', isOnline, classNam
 
     // Get initials from name
     const getInitials = (name: string) => {
+        if (!name || typeof name !== 'string') return '?';
         return name
             .split(' ')
             .map(word => word[0])
@@ -33,6 +34,7 @@ export default function Avatar({ photoUrl, name, size = 'md', isOnline, classNam
 
     // Generate a consistent color based on the name
     const getColorFromName = (name: string) => {
+        if (!name || typeof name !== 'string') return 'bg-gray-500';
         const colors = [
             'bg-red-500',
             'bg-blue-500',
