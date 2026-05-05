@@ -94,6 +94,27 @@ export default function Index({ chats, users, auth }: PageProps) {
         }
         return 'default';
     });
+    const [chatAnimations, setChatAnimations] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('chatAnimations');
+            return saved !== 'false'; // Default true
+        }
+        return true;
+    });
+    const [soundNotifications, setSoundNotifications] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('soundNotifications');
+            return saved !== 'false'; // Default true
+        }
+        return true;
+    });
+    const [showTypingIndicator, setShowTypingIndicator] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('showTypingIndicator');
+            return saved !== 'false'; // Default true
+        }
+        return true;
+    });
     const [chatColors, setChatColors] = useState(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('chatColors');
@@ -287,6 +308,19 @@ export default function Index({ chats, users, auth }: PageProps) {
     useEffect(() => {
         localStorage.setItem('chatTheme', chatTheme);
     }, [chatTheme]);
+
+    // Persist other settings to localStorage
+    useEffect(() => {
+        localStorage.setItem('chatAnimations', String(chatAnimations));
+    }, [chatAnimations]);
+
+    useEffect(() => {
+        localStorage.setItem('soundNotifications', String(soundNotifications));
+    }, [soundNotifications]);
+
+    useEffect(() => {
+        localStorage.setItem('showTypingIndicator', String(showTypingIndicator));
+    }, [showTypingIndicator]);
 
     // Save chat colors to localStorage
     useEffect(() => {
@@ -670,9 +704,42 @@ export default function Index({ chats, users, auth }: PageProps) {
         }
     };
 
+    // Get background theme classes based on chatTheme
+    const getBackgroundTheme = () => {
+        const themes: Record<string, { light: string; dark: string }> = {
+            default: {
+                light: 'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50',
+                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
+            },
+            dark: {
+                light: 'bg-gradient-to-br from-gray-800 via-gray-900 to-black',
+                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
+            },
+            nature: {
+                light: 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50',
+                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
+            },
+            sunset: {
+                light: 'bg-gradient-to-br from-orange-50 via-red-50 to-pink-50',
+                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
+            },
+            ocean: {
+                light: 'bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50',
+                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
+            },
+            lavender: {
+                light: 'bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-50',
+                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
+            }
+        };
+
+        const theme = themes[chatTheme] || themes.default;
+        return `${theme.light} ${theme.dark}`;
+    };
+
     return (
         <>
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-black transition-colors duration-200">
+            <div className={`min-h-screen ${getBackgroundTheme()} transition-colors duration-200`}>
                 {/* Modern Fixed Glass Sidebar */}
                 <div className={`${
                     isMobile 
@@ -1743,15 +1810,30 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         </label>
                                         <label className="flex items-center justify-between cursor-pointer">
                                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Chat animaties</span>
-                                            <input type="checkbox" className="rounded" defaultChecked />
+                                            <input 
+                                                type="checkbox" 
+                                                className="rounded" 
+                                                checked={chatAnimations}
+                                                onChange={(e) => setChatAnimations(e.target.checked)}
+                                            />
                                         </label>
                                         <label className="flex items-center justify-between cursor-pointer">
                                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Geluidsmeldingen</span>
-                                            <input type="checkbox" className="rounded" defaultChecked />
+                                            <input 
+                                                type="checkbox" 
+                                                className="rounded" 
+                                                checked={soundNotifications}
+                                                onChange={(e) => setSoundNotifications(e.target.checked)}
+                                            />
                                         </label>
                                         <label className="flex items-center justify-between cursor-pointer">
-                                            <span className="text-sm font-medium text-gray-700">Typing indicator</span>
-                                            <input type="checkbox" className="rounded" defaultChecked />
+                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Typing indicator</span>
+                                            <input 
+                                                type="checkbox" 
+                                                className="rounded" 
+                                                checked={showTypingIndicator}
+                                                onChange={(e) => setShowTypingIndicator(e.target.checked)}
+                                            />
                                         </label>
                                     </div>
                                 </div>
