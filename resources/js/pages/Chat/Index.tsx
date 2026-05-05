@@ -693,7 +693,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
                                 </div>
                                 <div>
-                                    <h1 className="text-lg font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text">
+                                    <h1 className="text-lg font-bold text-white">
                                         {auth.user.name}
                                     </h1>
                                     <p className="text-white/80 text-sm">Moderne chat ervaring</p>
@@ -741,11 +741,11 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         name={auth.user.name}
                                         size="sm"
                                     />
-                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
+                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></div>
                                 </div>
                                 <div className="flex-1 text-left">
-                                    <p className="font-medium text-gray-800">{auth.user.name}</p>
-                                    <p className="text-xs text-gray-600">Profiel bekijken</p>
+                                    <p className="font-medium text-gray-800 dark:text-white">{auth.user.name}</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-300">Profiel bekijken</p>
                                 </div>
                                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
