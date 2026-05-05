@@ -1173,7 +1173,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                             </div>
 
                             {/* Input area */}
-                            <div className={`border-t border-gray-200 bg-white p-3 sm:p-4 shrink-0 ${
+                            <div className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 sm:p-4 shrink-0 ${
                                 isMobile ? 'sticky bottom-0 z-20' : ''
                             }`}>
                                 <form onSubmit={sendMessage} className="space-y-3">
