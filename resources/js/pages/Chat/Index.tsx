@@ -684,7 +684,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                     isMobile 
                         ? (selectedChat ? 'w-full' : 'hidden') 
                         : 'ml-80 flex-1'
-                    } flex flex-col backdrop-blur-xl bg-white/5 h-screen`}>
+                    } flex flex-col backdrop-blur-xl bg-white/5 h-[100dvh]`}>
                     {/* Header */}
                     {selectedChat && currentParticipant ? (
                         <>
@@ -751,10 +751,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                             {/* Messages container */}
                             <div 
                                 ref={messagesContainerRef}
-                                className={`overflow-y-auto ${
-                                    isMobile ? 'pb-20' : ''
-                                } relative flex-grow`}
-                                style={{ maxHeight: 'calc(100vh - 200px)' }}
+                                className="overflow-y-auto relative flex-1 min-h-0"
                             >
                                 {loadingMessages ? (
                                     <div className="flex items-center justify-center h-32">
@@ -911,7 +908,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                             </div>
 
                             {/* Input area */}
-                            <div className={`border-t border-gray-200 bg-white p-3 sm:p-4 ${
+                            <div className={`border-t border-gray-200 bg-white p-3 sm:p-4 shrink-0 ${
                                 isMobile ? 'sticky bottom-0 z-20' : ''
                             }`}>
                                 <form onSubmit={sendMessage} className="space-y-3">
