@@ -93,6 +93,10 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<{messageId: number, type: 'me' | 'everyone'} | null>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
+    const [showMediaGallery, setShowMediaGallery] = useState(false);
+    const [mediaItems, setMediaItems] = useState<any[]>([]);
+    const [mediaFilter, setMediaFilter] = useState<'all' | 'images' | 'files'>('all');
+    const [loadingMedia, setLoadingMedia] = useState(false);
     
     // Refs
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -194,6 +198,13 @@ export default function Index({ chats, users, auth }: PageProps) {
         
         return () => clearInterval(interval);
     }, [selectedChat]);
+
+    // Refresh media when filter changes
+    useEffect(() => {
+        if (showMediaGallery && selectedChat) {
+            fetchMediaGallery();
+        }
+    }, [mediaFilter, showMediaGallery]);
 
     // Poll typing status every 2 seconds when chat is open
     useEffect(() => {
@@ -511,6 +522,29 @@ export default function Index({ chats, users, auth }: PageProps) {
         }
     };
 
+    const fetchMediaGallery = async () => {
+        if (!selectedChat) return;
+
+        setLoadingMedia(true);
+        try {
+            const response = await axios.get(`/chat/${selectedChat}/media`, {
+                params: { type: mediaFilter }
+            });
+            
+            setMediaItems(response.data.media || []);
+        } catch (error) {
+            console.error('Error fetching media:', error);
+            setMediaItems([]);
+        } finally {
+            setLoadingMedia(false);
+        }
+    };
+
+    const openMediaGallery = () => {
+        setShowMediaGallery(true);
+        fetchMediaGallery();
+    };
+
     const handleEmojiSelect = (emoji: string) => {
         if (showEmojiPickerForMessage) {
             addReaction(showEmojiPickerForMessage, emoji);
@@ -816,6 +850,15 @@ export default function Index({ chats, users, auth }: PageProps) {
 
                                 {/* Header actions */}
                                 <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={openMediaGallery}
+                                        className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition"
+                                        title="Media gallerij"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </button>
                                     <button
                                         onClick={refreshMessages}
                                         className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition"
@@ -1670,6 +1713,151 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         Annuleren
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Media Gallery Modal */}
+                {showMediaGallery && (
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+                            {/* Gallery Header */}
+                            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white p-4 sm:p-6 relative flex-shrink-0">
+                                <button
+                                    onClick={() => {
+                                        setShowMediaGallery(false);
+                                        setMediaFilter('all');
+                                        setMediaItems([]);
+                                    }}
+                                    className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                                
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
+                                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold">Media gallerij</h2>
+                                        <p className="text-white/80">
+                                            {currentParticipant?.name && `Gedeelde media met ${currentParticipant.name}`}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Filter tabs */}
+                                <div className="flex gap-2 mt-4">
+                                    <button
+                                        onClick={() => setMediaFilter('all')}
+                                        className={`px-4 py-2 rounded-lg font-medium transition ${
+                                            mediaFilter === 'all' 
+                                                ? 'bg-white text-purple-600' 
+                                                : 'bg-white/10 text-white hover:bg-white/20'
+                                        }`}
+                                    >
+                                        Alles
+                                    </button>
+                                    <button
+                                        onClick={() => setMediaFilter('images')}
+                                        className={`px-4 py-2 rounded-lg font-medium transition ${
+                                            mediaFilter === 'images' 
+                                                ? 'bg-white text-purple-600' 
+                                                : 'bg-white/10 text-white hover:bg-white/20'
+                                        }`}
+                                    >
+                                        📷 Foto's
+                                    </button>
+                                    <button
+                                        onClick={() => setMediaFilter('files')}
+                                        className={`px-4 py-2 rounded-lg font-medium transition ${
+                                            mediaFilter === 'files' 
+                                                ? 'bg-white text-purple-600' 
+                                                : 'bg-white/10 text-white hover:bg-white/20'
+                                        }`}
+                                    >
+                                        📁 Bestanden
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Gallery Content */}
+                            <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
+                                {loadingMedia ? (
+                                    <div className="flex items-center justify-center h-64">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                                    </div>
+                                ) : mediaItems.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                                        <svg className="w-20 h-20 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <p className="text-lg font-medium">Geen media gevonden</p>
+                                        <p className="text-sm">
+                                            {mediaFilter === 'images' && 'Er zijn nog geen foto\'s gedeeld in dit gesprek'}
+                                            {mediaFilter === 'files' && 'Er zijn nog geen bestanden gedeeld in dit gesprek'}
+                                            {mediaFilter === 'all' && 'Er is nog geen media gedeeld in dit gesprek'}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p className="text-sm text-gray-600 mb-4">
+                                            {mediaItems.length} {mediaItems.length === 1 ? 'item' : 'items'} gevonden
+                                        </p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                            {mediaItems.map((item) => (
+                                                <div
+                                                    key={item.id}
+                                                    className="group relative bg-gray-100 rounded-lg overflow-hidden aspect-square cursor-pointer hover:ring-2 hover:ring-blue-500 transition"
+                                                    onClick={() => {
+                                                        if (item.type === 'image') {
+                                                            setFullscreenImage(item.url);
+                                                        } else {
+                                                            window.open(item.url, '_blank');
+                                                        }
+                                                    }}
+                                                >
+                                                    {item.type === 'image' ? (
+                                                        <img
+                                                            src={item.url}
+                                                            alt="Media"
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex flex-col items-center justify-center p-3 bg-gray-200">
+                                                            <svg className="w-12 h-12 text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                            </svg>
+                                                            <p className="text-xs text-gray-600 text-center font-medium truncate w-full">
+                                                                Bestand
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Overlay with info */}
+                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                                                        <p className="text-white text-xs font-medium truncate">
+                                                            {item.user.name}
+                                                        </p>
+                                                        <p className="text-white/70 text-xs">
+                                                            {item.created_at}
+                                                        </p>
+                                                        {item.message && (
+                                                            <p className="text-white/90 text-xs mt-1 line-clamp-2">
+                                                                {item.message}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

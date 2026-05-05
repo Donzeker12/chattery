@@ -131,6 +131,61 @@ class ChatController extends Controller
     }
 
     /**
+     * Get all media (images and files) from a chat.
+     */
+    public function getMedia(Request $request, Chat $chat)
+    {
+        $user = Auth::user();
+
+        // Verify user is part of this chat
+        if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
+            return response()->json(['error' => 'Niet geautoriseerd'], 403);
+        }
+
+        // Get filter type from request (all, images, files)
+        $type = $request->get('type', 'all');
+
+        // Get all messages with attachments
+        $query = $chat->messages()
+            ->whereNotNull('attachment_path')
+            ->whereNull('deleted_at')
+            ->with('user')
+            ->orderBy('created_at', 'desc');
+
+        // Apply type filter
+        if ($type === 'images') {
+            $query->where('attachment_type', 'image');
+        } elseif ($type === 'files') {
+            $query->where('attachment_type', 'file');
+        }
+
+        $mediaMessages = $query->get()->filter(function ($message) use ($user) {
+            // Filter out messages deleted or hidden for this user
+            $deletedForUsers = $message->deleted_for_users ?? [];
+            $hiddenForUsers = $message->hidden_for_users ?? [];
+            
+            return !in_array($user->id, $deletedForUsers) && !in_array($user->id, $hiddenForUsers);
+        })->map(function ($message) {
+            return [
+                'id' => $message->id,
+                'type' => $message->attachment_type,
+                'url' => asset('storage/' . $message->attachment_path),
+                'message' => $message->message,
+                'created_at' => $message->created_at->format('d-m-Y H:i'),
+                'user' => [
+                    'id' => $message->user->id,
+                    'name' => $message->user->name,
+                ],
+            ];
+        })->values();
+
+        return response()->json([
+            'media' => $mediaMessages,
+            'total' => $mediaMessages->count(),
+        ]);
+    }
+
+    /**
      * Send a message in a chat.
      */
     public function sendMessage(Request $request, Chat $chat)

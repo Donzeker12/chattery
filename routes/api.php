@@ -32,6 +32,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     
     // Messages
     Route::get('/chats/{chat}', [ChatController::class, 'show']);
+    Route::get('/chats/{chat}/media', [ChatController::class, 'getMedia']);
     Route::post('/chats/{chat}/messages', [ChatController::class, 'sendMessage']);
     Route::put('/messages/{message}/edit', [ChatController::class, 'editMessage']);
     Route::delete('/messages/{message}/delete-for-me', [ChatController::class, 'deleteMessageForMe']);
