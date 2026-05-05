@@ -80,11 +80,36 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [profileUser, setProfileUser] = useState<User | null>(null);
     const [showSettingsModal, setShowSettingsModal] = useState(false);
-    const [chatTheme, setChatTheme] = useState('default');
-    const [chatColors, setChatColors] = useState({
-        primary: '#3B82F6',
-        secondary: '#8B5CF6',
-        background: 'gradient'
+    const [darkMode, setDarkMode] = useState(() => {
+        // Initialize from localStorage
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('darkMode');
+            return saved === 'true';
+        }
+        return false;
+    });
+    const [chatTheme, setChatTheme] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('chatTheme') || 'default';
+        }
+        return 'default';
+    });
+    const [chatColors, setChatColors] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('chatColors');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    // Fallback to default
+                }
+            }
+        }
+        return {
+            primary: '#3B82F6',
+            secondary: '#8B5CF6',
+            background: 'gradient'
+        };
     });
     const [forceInputKey, setForceInputKey] = useState(0);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -243,6 +268,30 @@ export default function Index({ chats, users, auth }: PageProps) {
             scrollToBottom();
         }
     }, [isOtherUserTyping]);
+
+    // Apply dark mode class to html element
+    useEffect(() => {
+        if (darkMode) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, [darkMode]);
+
+    // Save dark mode preference to localStorage
+    useEffect(() => {
+        localStorage.setItem('darkMode', darkMode.toString());
+    }, [darkMode]);
+
+    // Save chat theme to localStorage
+    useEffect(() => {
+        localStorage.setItem('chatTheme', chatTheme);
+    }, [chatTheme]);
+
+    // Save chat colors to localStorage
+    useEffect(() => {
+        localStorage.setItem('chatColors', JSON.stringify(chatColors));
+    }, [chatColors]);
 
     const handleLogout = () => {
         router.post('/logout');
@@ -623,13 +672,13 @@ export default function Index({ chats, users, auth }: PageProps) {
 
     return (
         <>
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-black transition-colors duration-200">
                 {/* Modern Fixed Glass Sidebar */}
                 <div className={`${
                     isMobile 
                         ? (selectedChat ? 'hidden' : 'fixed inset-y-0 left-0 w-full z-30') 
                         : 'fixed inset-y-0 left-0 w-80 z-30'
-                    } backdrop-blur-xl bg-white/30 border-r border-white/20 shadow-2xl flex flex-col`}>
+                    } backdrop-blur-xl bg-white/30 dark:bg-gray-900/90 border-r border-white/20 dark:border-gray-700 shadow-2xl flex flex-col transition-colors duration-200`}>
                     
                     {/* Modern Header with Gradient */}
                     <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white p-4 shadow-lg">
@@ -739,8 +788,10 @@ export default function Index({ chats, users, auth }: PageProps) {
                             chatsList.map((chat) => (
                                 <div
                                     key={chat.id}
-                                    className={`relative p-4 border-b border-gray-200 cursor-pointer transition-colors group ${
-                                        selectedChat === chat.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+                                    className={`relative p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer transition-colors group ${
+                                        selectedChat === chat.id 
+                                            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700' 
+                                            : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                                     }`}
                                     onClick={() => openChat(chat.id)}
                                 >
@@ -752,14 +803,14 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 size="md"
                                             />
                                             {chat.participant.is_online && (
-                                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
+                                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-gray-800"></div>
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-1">
-                                                <h3 className="font-semibold text-gray-900 truncate">{chat.participant.name}</h3>
+                                                <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{chat.participant.name}</h3>
                                                 {chat.latest_message && (
-                                                    <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap ml-2">
                                                         {new Date(chat.latest_message.created_at).toLocaleDateString('nl-NL', {
                                                             day: 'numeric',
                                                             month: 'short'
@@ -767,13 +818,13 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-gray-600 truncate">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
                                                 {chat.latest_message ? (
                                                     chat.latest_message.attachment_url ? 
                                                         `📎 ${chat.latest_message.attachment_type === 'image' ? 'Afbeelding' : 'Bestand'}` 
                                                         : chat.latest_message.message
                                                 ) : (
-                                                    <span className="text-gray-400 italic">Nog geen berichten</span>
+                                                    <span className="text-gray-400 dark:text-gray-500 italic">Nog geen berichten</span>
                                                 )}
                                             </p>
                                         </div>
@@ -802,7 +853,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                     {/* Header */}
                     {selectedChat && currentParticipant ? (
                         <>
-                            <div className={`bg-white border-b border-gray-200 p-3 sm:p-4 flex items-center gap-3 sm:gap-4 shadow-sm ${
+                            <div className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-3 sm:p-4 flex items-center gap-3 sm:gap-4 shadow-sm ${
                                 isMobile ? 'sticky top-0 z-20' : ''
                             }`}>
                                 {/* Mobile back button */}
@@ -828,7 +879,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         setProfileUser(currentParticipant);
                                         setShowProfileModal(true);
                                     }}
-                                    className="flex items-center gap-3 sm:gap-4 flex-1 hover:bg-gray-50 p-2 -m-2 rounded-lg transition"
+                                    className="flex items-center gap-3 sm:gap-4 flex-1 hover:bg-gray-50 dark:hover:bg-gray-800 p-2 -m-2 rounded-lg transition"
                                 >
                                     <div className="relative">
                                         <Avatar
@@ -837,12 +888,12 @@ export default function Index({ chats, users, auth }: PageProps) {
                                             size="md"
                                         />
                                         {currentParticipant.is_online && (
-                                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
+                                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></div>
                                         )}
                                     </div>
                                     <div className="text-left min-w-0 flex-1">
-                                        <h2 className="font-bold text-gray-900 text-base sm:text-lg truncate">{currentParticipant.name}</h2>
-                                        <p className="text-sm text-gray-600">
+                                        <h2 className="font-bold text-gray-900 dark:text-gray-100 text-base sm:text-lg truncate">{currentParticipant.name}</h2>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
                                             {currentParticipant.is_online ? '🟢 Online' : '⚪ Offline'}
                                         </p>
                                     </div>
@@ -886,11 +937,16 @@ export default function Index({ chats, users, auth }: PageProps) {
                                             <div key={message.id} className="group">
                                                 <div className={`flex ${message.is_mine ? 'justify-end' : 'justify-start'} mb-2`}>
                                                     <div className={`flex flex-col ${message.is_mine ? 'items-end' : 'items-start'} max-w-xs lg:max-w-md`}>
-                                                        <div className={`px-4 py-2 rounded-2xl ${
-                                                            message.is_mine 
-                                                                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white' 
-                                                                : 'bg-white border border-gray-200 text-gray-800 shadow-sm'
-                                                        }`}>
+                                                        <div 
+                                                            className={`px-4 py-2 rounded-2xl ${
+                                                                message.is_mine 
+                                                                    ? 'text-white' 
+                                                                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 shadow-sm'
+                                                            }`}
+                                                            style={message.is_mine ? {
+                                                                background: `linear-gradient(135deg, ${chatColors.primary}, ${chatColors.secondary})`
+                                                            } : undefined}
+                                                        >
                                                             {message.attachment_url ? (
                                                                 <div className="mb-2">
                                                                     {message.attachment_type === 'image' ? (
@@ -981,11 +1037,11 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 {showEmojiPickerForMessage === message.id && (
                                                     <div className={`flex ${message.is_mine ? 'justify-end' : 'justify-start'} mb-2`}>
                                                         <div className="relative">
-                                                            <div className={`absolute top-0 transform -translate-y-full bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 z-50 w-80 ${
+                                                            <div className={`absolute top-0 transform -translate-y-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 z-50 w-80 ${
                                                                 message.is_mine ? 'right-0' : 'left-0'
                                                             }`}>
                                                                 <div className="flex flex-col gap-3">
-                                                                    <div className="flex gap-2 text-sm font-medium text-gray-600 border-b border-gray-200 pb-2">
+                                                                    <div className="flex gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 pb-2">
                                                                         <span>😀 Emoties</span>
                                                                     </div>
                                                                     <div className="grid grid-cols-8 gap-2 max-h-40 overflow-y-auto">
@@ -993,7 +1049,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                                             <button 
                                                                                 key={emoji}
                                                                                 onClick={() => handleEmojiSelect(emoji)}
-                                                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg flex items-center justify-center"
+                                                                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-lg flex items-center justify-center"
                                                                             >
                                                                                 {emoji}
                                                                             </button>
@@ -1001,7 +1057,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                                     </div>
                                                                     <button
                                                                         onClick={() => setShowEmojiPickerForMessage(null)}
-                                                                        className="mt-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                                                                        className="mt-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
                                                                     >
                                                                         Sluiten
                                                                     </button>
@@ -1021,7 +1077,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                     name={currentParticipant.name}
                                                     size="sm" 
                                                 />
-                                                <div className="bg-gray-100 rounded-2xl px-4 py-2 max-w-[70%]">
+                                                <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-2 max-w-[70%]">
                                                     <div className="flex items-center space-x-1">
                                                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                                                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -1176,7 +1232,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                     onChange={(e) => handleMessageInputChange(e.target.value)}
                                                     onKeyPress={handleKeyPress}
                                                     placeholder="Typ een bericht..."
-                                                    className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    className="w-full pl-12 pr-12 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                     rows={1}
                                                     style={{
                                                         minHeight: '48px',
@@ -1205,11 +1261,11 @@ export default function Index({ chats, users, auth }: PageProps) {
                             </div>
                         </>
                     ) : (
-                        <div className="flex-1 flex items-center justify-center bg-gray-50">
+                        <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
                             <div className="text-center max-w-md mx-auto p-8">
-                                <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
+                                <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center">
                                     <svg 
-                                        className="w-12 h-12 text-gray-400" 
+                                        className="w-12 h-12 text-gray-400 dark:text-gray-500" 
                                         fill="none" 
                                         stroke="currentColor" 
                                         viewBox="0 0 24 24"
@@ -1520,7 +1576,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                 {/* Settings Modal */}
                 {showSettingsModal && (
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
                             {/* Settings Header */}
                             <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white p-6 relative">
                                 <button
@@ -1550,7 +1606,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                             <div className="p-6 space-y-8 max-h-[calc(90vh-140px)] overflow-y-auto">
                                 {/* Profile Settings */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
@@ -1564,14 +1620,14 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 size="lg"
                                             />
                                             <div className="flex-1">
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Profielfoto</label>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Profielfoto</label>
                                                 <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
                                                     Foto uploaden
                                                 </button>
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Wachtwoord wijzigen</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Wachtwoord wijzigen</label>
                                             <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm">
                                                 Wachtwoord instellen
                                             </button>
@@ -1581,7 +1637,7 @@ export default function Index({ chats, users, auth }: PageProps) {
 
                                 {/* Chat Theme */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                         <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h4a2 2 0 002-2V9a2 2 0 00-2-2H7a2 2 0 00-2 2v6a2 2 0 002 2z" />
                                         </svg>
@@ -1589,7 +1645,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     </h3>
                                     <div className="bg-gray-50 rounded-xl p-4 space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-3">Kleurenschema</label>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Kleurenschema</label>
                                             <div className="grid grid-cols-2 gap-3">
                                                 {[
                                                     { name: 'Blauw → Paars', colors: ['#3B82F6', '#8B5CF6'], id: 'blue-purple' },
@@ -1669,23 +1725,28 @@ export default function Index({ chats, users, auth }: PageProps) {
 
                                 {/* Additional Features */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                         <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                         </svg>
                                         Extra features
                                     </h3>
-                                    <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-3">
                                         <label className="flex items-center justify-between cursor-pointer">
-                                            <span className="text-sm font-medium text-gray-700">Donkere modus</span>
-                                            <input type="checkbox" className="rounded" />
+                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Donkere modus</span>
+                                            <input 
+                                                type="checkbox" 
+                                                className="rounded" 
+                                                checked={darkMode}
+                                                onChange={(e) => setDarkMode(e.target.checked)}
+                                            />
                                         </label>
                                         <label className="flex items-center justify-between cursor-pointer">
-                                            <span className="text-sm font-medium text-gray-700">Chat animaties</span>
+                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Chat animaties</span>
                                             <input type="checkbox" className="rounded" defaultChecked />
                                         </label>
                                         <label className="flex items-center justify-between cursor-pointer">
-                                            <span className="text-sm font-medium text-gray-700">Geluidsmeldingen</span>
+                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Geluidsmeldingen</span>
                                             <input type="checkbox" className="rounded" defaultChecked />
                                         </label>
                                         <label className="flex items-center justify-between cursor-pointer">
