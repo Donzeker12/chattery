@@ -123,7 +123,11 @@ class ChatController extends Controller
                 $isMine = $message->user_id === $user->id;
                 $isViewOnce = (bool) $message->view_once;
                 $viewOnceViewedBy = $message->view_once_viewed_by ?? [];
-                $viewOnceViewed = in_array($user->id, $viewOnceViewedBy);
+                // Sender: has the recipient seen it? (anyone in the array)
+                // Receiver: have I already seen it?
+                $viewOnceViewed = $isMine
+                    ? !empty($viewOnceViewedBy)
+                    : in_array($user->id, $viewOnceViewedBy);
 
                 // For view_once images, only expose the URL to the sender
                 $attachmentUrl = null;

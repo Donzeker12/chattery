@@ -84,6 +84,9 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [profileUser, setProfileUser] = useState<User | null>(null);
     const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [photoUploading, setPhotoUploading] = useState(false);
+    const [photoUploadMsg, setPhotoUploadMsg] = useState<string | null>(null);
+    const photoInputRef = useRef<HTMLInputElement>(null);
     const [darkMode, setDarkMode] = useState(() => {
         // Initialize from localStorage
         if (typeof window !== 'undefined') {
@@ -654,6 +657,32 @@ export default function Index({ chats, users, auth }: PageProps) {
         }
     };
 
+    const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            setPhotoUploadMsg('❌ Bestand is te groot. Maximum 5MB.');
+            setTimeout(() => setPhotoUploadMsg(null), 3000);
+            return;
+        }
+        setPhotoUploading(true);
+        setPhotoUploadMsg('Uploaden...');
+        const formData = new FormData();
+        formData.append('photo', file);
+        try {
+            const res = await axios.post('/profile/photo', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setPhotoUploadMsg('✅ Foto geüpload!');
+            // Update auth.user photo in local state by reloading
+            window.location.reload();
+        } catch (err: any) {
+            setPhotoUploadMsg('❌ ' + (err.response?.data?.errors?.photo?.[0] || 'Upload mislukt'));
+        } finally {
+            setPhotoUploading(false);
+            if (photoInputRef.current) photoInputRef.current.value = '';
+            setTimeout(() => setPhotoUploadMsg(null), 3000);
+        }
+    };
+
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -1026,12 +1055,34 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                             {message.view_once ? (
                                                                 <div className="mb-2">
                                                                     {message.is_mine ? (
-                                                                        // Sender: show "sent as view-once" indicator
-                                                                        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${message.view_once_viewed ? 'bg-white/10' : 'bg-white/20'}`}>
-                                                                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                                                            <span className="text-sm">
-                                                                                {message.view_once_viewed ? 'Foto bekeken' : 'Eenmalige foto'}
-                                                                            </span>
+                                                                        // Sender: status of whether recipient has seen it
+                                                                        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg min-w-[160px] ${
+                                                                            message.view_once_viewed
+                                                                                ? 'bg-white/15'
+                                                                                : 'bg-white/20'
+                                                                        }`}>
+                                                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                                                                message.view_once_viewed ? 'bg-white/30' : 'bg-white/20'
+                                                                            }`}>
+                                                                                {message.view_once_viewed ? (
+                                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                                    </svg>
+                                                                                ) : (
+                                                                                    <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                                                                    </svg>
+                                                                                )}
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-xs font-semibold leading-tight">
+                                                                                    {message.view_once_viewed ? 'Gezien 👁' : 'Eenmalige foto'}
+                                                                                </p>
+                                                                                <p className="text-xs opacity-70 leading-tight">
+                                                                                    {message.view_once_viewed ? 'Ontvanger heeft bekeken' : 'Nog niet bekeken'}
+                                                                                </p>
+                                                                            </div>
                                                                         </div>
                                                                     ) : message.view_once_viewed ? (
                                                                         // Receiver already viewed
@@ -1050,7 +1101,6 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                                                         m.id === message.id ? { ...m, view_once_viewed: true } : m
                                                                                     ));
                                                                                 } catch {
-                                                                                    // already viewed or error
                                                                                     setMessages(prev => prev.map(m =>
                                                                                         m.id === message.id ? { ...m, view_once_viewed: true } : m
                                                                                     ));
@@ -1812,24 +1862,67 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         </svg>
                                         Profiel
                                     </h3>
-                                    <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                                        {/* Photo row */}
                                         <div className="flex items-center gap-4">
-                                            <Avatar
-                                                photoUrl={auth.user.profile_photo_url}
-                                                name={auth.user.name}
-                                                size="lg"
-                                            />
-                                            <div className="flex-1">
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Profielfoto</label>
-                                                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                                    Foto uploaden
-                                                </button>
+                                            <div className="relative flex-shrink-0">
+                                                <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                                    {auth.user.profile_photo_url ? (
+                                                        <img src={auth.user.profile_photo_url} alt="Profielfoto" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-white text-2xl font-bold">{auth.user.name.charAt(0).toUpperCase()}</span>
+                                                    )}
+                                                </div>
+                                                {photoUploading && (
+                                                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    </div>
+                                                )}
                                             </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{auth.user.name}</p>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{auth.user.email}</p>
+                                                {photoUploadMsg && (
+                                                    <p className="text-xs mt-1 text-gray-600 dark:text-gray-300">{photoUploadMsg}</p>
+                                                )}
+                                            </div>
+                                            <input
+                                                ref={photoInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleProfilePhotoUpload}
+                                            />
+                                            <button
+                                                onClick={() => photoInputRef.current?.click()}
+                                                disabled={photoUploading}
+                                                className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
+                                                Foto
+                                            </button>
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Wachtwoord wijzigen</label>
-                                            <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm">
-                                                Wachtwoord instellen
+
+                                        {/* Divider */}
+                                        <div className="border-t border-gray-200 dark:border-gray-700 my-4" />
+
+                                        {/* Password row */}
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Wachtwoord</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">Wijzig je inlogwachtwoord</p>
+                                            </div>
+                                            <button
+                                                onClick={() => { setShowSettingsModal(false); window.location.href = '/profile'; }}
+                                                className="flex items-center gap-2 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-xl text-sm font-medium transition-colors"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                                </svg>
+                                                Wijzigen
                                             </button>
                                         </div>
                                     </div>

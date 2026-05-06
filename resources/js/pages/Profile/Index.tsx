@@ -169,8 +169,7 @@ export default function Profile() {
                             
                             <div className="space-y-6">
                                 <ProfilePhotoUpload
-                                    initialPhotoUrl={user.profile_photo_url}
-                                    userName={user.name}
+                                    currentPhotoUrl={user.profile_photo_url}
                                     onPhotoUpdate={handlePhotoUpdate}
                                 />
                                 
