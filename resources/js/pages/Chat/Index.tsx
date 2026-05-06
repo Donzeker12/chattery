@@ -30,10 +30,14 @@ interface Chat {
 interface Message {
     id: number;
     content: string;
+    message?: string;
     created_at: string;
     updated_at: string;
+    is_mine?: boolean;
     attachment_url?: string;
     attachment_type?: 'image' | 'file';
+    view_once?: boolean;
+    view_once_viewed?: boolean;
     user: {
         id: number;
         name: string;
@@ -135,6 +139,7 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [forceInputKey, setForceInputKey] = useState(0);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+    const [viewOnce, setViewOnce] = useState(false);
     const [showDeleteMenu, setShowDeleteMenu] = useState<number | null>(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<{messageId: number, type: 'me' | 'everyone'} | null>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
@@ -436,6 +441,9 @@ export default function Index({ chats, users, auth }: PageProps) {
             formData.append('message', messageContent);
             if (file) {
                 formData.append('attachment', file);
+                if (viewOnce) {
+                    formData.append('view_once', '1');
+                }
             }
 
             await axios.post(`/api/chats/${selectedChat}/messages`, formData, {
@@ -446,6 +454,7 @@ export default function Index({ chats, users, auth }: PageProps) {
 
             setNewMessage('');
             setSelectedFile(null);
+            setViewOnce(false);
             
             // Stop typing indicator
             updateTypingStatus(false);
@@ -1014,7 +1023,48 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                                 background: `linear-gradient(135deg, ${chatColors.primary}, ${chatColors.secondary})`
                                                             } : undefined}
                                                         >
-                                                            {message.attachment_url ? (
+                                                            {message.view_once ? (
+                                                                <div className="mb-2">
+                                                                    {message.is_mine ? (
+                                                                        // Sender: show "sent as view-once" indicator
+                                                                        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${message.view_once_viewed ? 'bg-white/10' : 'bg-white/20'}`}>
+                                                                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                                            <span className="text-sm">
+                                                                                {message.view_once_viewed ? 'Foto bekeken' : 'Eenmalige foto'}
+                                                                            </span>
+                                                                        </div>
+                                                                    ) : message.view_once_viewed ? (
+                                                                        // Receiver already viewed
+                                                                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                                                                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                                            <span className="text-sm">Foto al bekeken</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        // Receiver can tap to view
+                                                                        <button
+                                                                            onClick={async () => {
+                                                                                try {
+                                                                                    const res = await axios.post(`/api/messages/${message.id}/view-once`);
+                                                                                    setFullscreenImage(res.data.url);
+                                                                                    setMessages(prev => prev.map(m =>
+                                                                                        m.id === message.id ? { ...m, view_once_viewed: true } : m
+                                                                                    ));
+                                                                                } catch {
+                                                                                    // already viewed or error
+                                                                                    setMessages(prev => prev.map(m =>
+                                                                                        m.id === message.id ? { ...m, view_once_viewed: true } : m
+                                                                                    ));
+                                                                                }
+                                                                            }}
+                                                                            className="flex items-center gap-2 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors w-full"
+                                                                        >
+                                                                            <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                                            <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Tik om te bekijken</span>
+                                                                            <span className="ml-auto text-xs text-blue-400 bg-blue-100 dark:bg-blue-800 px-1.5 py-0.5 rounded font-bold">1x</span>
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            ) : message.attachment_url ? (
                                                                 <div className="mb-2">
                                                                     {message.attachment_type === 'image' ? (
                                                                         <img 
@@ -1236,59 +1286,29 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 {/* File preview indicator */}
                                                 {selectedFile && (
                                                     <div className="absolute bottom-full left-0 mb-2 z-10">
-                                                        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg max-w-xs">
-                                                            <div className="flex items-start gap-3">
-                                                                {/* Image preview */}
-                                                                {filePreviewUrl && (
-                                                                    <div className="flex-shrink-0">
-                                                                        <img 
-                                                                            src={filePreviewUrl} 
-                                                                            alt="Preview"
-                                                                            className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                                                                            onLoad={() => console.log('Image preview loaded successfully')}
-                                                                            onError={(e) => {
-                                                                                console.error('Failed to load image preview:', e);
-                                                                                console.log('Preview URL:', filePreviewUrl);
-                                                                                console.log('Selected file:', selectedFile);
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                )}
-                                                                
-                                                                {/* File info */}
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="text-sm font-medium text-gray-900 truncate">
-                                                                        {selectedFile.name}
-                                                                    </p>
-                                                                    <p className="text-xs text-gray-500">
-                                                                        {(selectedFile.size / 1024 / 1024).toFixed(1)} MB
-                                                                    </p>
-                                                                    <p className="text-xs text-green-600 mt-1">
-                                                                        📎 Klaar om te verzenden
-                                                                    </p>
-                                                                </div>
-                                                                
-                                                                {/* Remove button */}
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setSelectedFile(null);
-                                                                        if (filePreviewUrl) {
-                                                                            URL.revokeObjectURL(filePreviewUrl);
-                                                                            setFilePreviewUrl(null);
-                                                                        }
-                                                                        setNewMessage('');
-                                                                        if (fileInputRef.current) {
-                                                                            fileInputRef.current.value = '';
-                                                                        }
-                                                                    }}
-                                                                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-                                                                >
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                    </svg>
-                                                                </button>
-                                                            </div>
+                                                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-2 shadow-lg flex items-center gap-2">
+                                                            {filePreviewUrl && (
+                                                                <img src={filePreviewUrl} alt="Preview" className="w-10 h-10 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
+                                                            )}
+                                                            <span className="text-sm text-gray-700 dark:text-gray-200 max-w-[120px] truncate">{selectedFile.name}</span>
+                                                            {viewOnce && (
+                                                                <span className="text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded font-semibold">1x</span>
+                                                            )}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedFile(null);
+                                                                    if (filePreviewUrl) {
+                                                                        URL.revokeObjectURL(filePreviewUrl);
+                                                                        setFilePreviewUrl(null);
+                                                                    }
+                                                                    setViewOnce(false);
+                                                                    if (fileInputRef.current) fileInputRef.current.value = '';
+                                                                }}
+                                                                className="text-gray-400 hover:text-red-500 transition-colors ml-1"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 )}
@@ -1495,6 +1515,119 @@ export default function Index({ chats, users, auth }: PageProps) {
                             className="max-w-full max-h-full object-contain"
                             onClick={(e) => e.stopPropagation()}
                         />
+                    </div>
+                )}
+
+                {/* Send Image Modal */}
+                {selectedFile && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[90]">
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
+                            {/* Header */}
+                            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Foto verzenden</h3>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedFile(null);
+                                        if (filePreviewUrl) { URL.revokeObjectURL(filePreviewUrl); setFilePreviewUrl(null); }
+                                        setViewOnce(false);
+                                        if (fileInputRef.current) fileInputRef.current.value = '';
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            </div>
+
+                            {/* Image preview */}
+                            <div className="relative bg-gray-50 dark:bg-gray-800 flex items-center justify-center" style={{ minHeight: 200 }}>
+                                {filePreviewUrl ? (
+                                    <img
+                                        src={filePreviewUrl}
+                                        alt="Preview"
+                                        className="max-h-64 w-full object-contain"
+                                    />
+                                ) : (
+                                    <div className="flex flex-col items-center gap-2 py-10 text-gray-400">
+                                        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        <span className="text-sm">{selectedFile.name}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Body */}
+                            <div className="px-5 py-4 space-y-4">
+                                {/* View-once toggle */}
+                                <button
+                                    type="button"
+                                    onClick={() => setViewOnce(v => !v)}
+                                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl border-2 transition-all duration-200 ${
+                                        viewOnce
+                                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30'
+                                            : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+                                    }`}
+                                >
+                                    <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                        viewOnce ? 'bg-purple-500' : 'bg-gray-200 dark:bg-gray-700'
+                                    }`}>
+                                        <svg className={`w-6 h-6 ${viewOnce ? 'text-white' : 'text-gray-500 dark:text-gray-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <p className={`font-semibold text-sm ${viewOnce ? 'text-purple-700 dark:text-purple-300' : 'text-gray-800 dark:text-gray-100'}`}>
+                                            Eenmalig bekijken
+                                        </p>
+                                        <p className={`text-xs mt-0.5 ${viewOnce ? 'text-purple-500 dark:text-purple-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                            {viewOnce ? 'Ontvanger kan deze foto maar 1 keer zien' : 'Ontvanger kan de foto altijd opnieuw bekijken'}
+                                        </p>
+                                    </div>
+                                    {/* Toggle pill */}
+                                    <div className={`w-12 h-6 rounded-full relative transition-colors duration-200 flex-shrink-0 ${viewOnce ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                                        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${viewOnce ? 'left-6' : 'left-0.5'}`} />
+                                    </div>
+                                </button>
+
+                                {/* Caption input */}
+                                <input
+                                    type="text"
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    placeholder="Bijschrift toevoegen..."
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-600"
+                                />
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-5 pb-5 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedFile(null);
+                                        if (filePreviewUrl) { URL.revokeObjectURL(filePreviewUrl); setFilePreviewUrl(null); }
+                                        setViewOnce(false);
+                                        setNewMessage('');
+                                        if (fileInputRef.current) fileInputRef.current.value = '';
+                                    }}
+                                    className="flex-1 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm"
+                                >
+                                    Annuleren
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => sendMessage()}
+                                    className={`flex-1 py-3 rounded-xl font-semibold text-sm text-white transition-colors flex items-center justify-center gap-2 ${
+                                        viewOnce
+                                            ? 'bg-purple-600 hover:bg-purple-700'
+                                            : 'bg-blue-600 hover:bg-blue-700'
+                                    }`}
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                                    Versturen
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
 

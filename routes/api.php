@@ -45,6 +45,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     // Reactions
     Route::post('/messages/{message}/reactions', [ChatController::class, 'addReaction']);
     Route::delete('/messages/{message}/reactions/{emoji}', [ChatController::class, 'removeReaction']);
+
+    // View once
+    Route::post('/messages/{message}/view-once', [ChatController::class, 'viewOnce']);
     
     // Users
     Route::get('/users', [ChatController::class, 'getUsers']);

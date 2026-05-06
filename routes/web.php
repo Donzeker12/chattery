@@ -55,6 +55,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/message/{message}/delete-for-me', [ChatController::class, 'deleteMessageForMe'])->name('message.delete-for-me');
     Route::delete('/message/{message}/delete-for-everyone', [ChatController::class, 'deleteMessageForEveryone'])->name('message.delete-for-everyone');
     Route::put('/message/{message}/edit', [ChatController::class, 'editMessage'])->name('message.edit');
+    Route::post('/message/{message}/view-once', [ChatController::class, 'viewOnce'])->name('message.view-once');
     
     // Message reactions
     Route::post('/message/{message}/reaction', [ChatController::class, 'addReaction'])->name('message.reaction.add');

@@ -120,13 +120,28 @@ class ChatController extends Controller
                 return true;
             })
             ->map(function ($message) use ($user) {
+                $isMine = $message->user_id === $user->id;
+                $isViewOnce = (bool) $message->view_once;
+                $viewOnceViewedBy = $message->view_once_viewed_by ?? [];
+                $viewOnceViewed = in_array($user->id, $viewOnceViewedBy);
+
+                // For view_once images, only expose the URL to the sender
+                $attachmentUrl = null;
+                if ($message->attachment_path) {
+                    if (!$isViewOnce || $isMine) {
+                        $attachmentUrl = asset('storage/' . $message->attachment_path);
+                    }
+                }
+
                 return [
                     'id' => $message->id,
                     'message' => $message->message,
-                    'content' => $message->message, // Add content field for frontend compatibility
+                    'content' => $message->message,
                     'attachment_type' => $message->attachment_type,
-                    'attachment_url' => $message->attachment_path ? asset('storage/' . $message->attachment_path) : null, // Change to attachment_url
-                    'is_mine' => $message->user_id === $user->id,
+                    'attachment_url' => $attachmentUrl,
+                    'view_once' => $isViewOnce,
+                    'view_once_viewed' => $viewOnceViewed,
+                    'is_mine' => $isMine,
                     'created_at' => $message->created_at,
                     'edited_at' => $message->edited_at,
                     'user' => [
@@ -177,12 +192,16 @@ class ChatController extends Controller
         $validated = $request->validate([
             'message' => 'nullable|string|max:5000',
             'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240', // Max 10MB
+            'view_once' => 'nullable|boolean',
         ]);
 
         // Ensure at least message or attachment is provided
         if (empty($validated['message']) && !$request->hasFile('attachment')) {
             return response()->json(['error' => 'Message or attachment is required'], 422);
         }
+
+        // view_once only makes sense for image attachments
+        $viewOnce = $request->hasFile('attachment') && !empty($validated['view_once']);
 
         $attachmentPath = null;
         $attachmentType = null;
@@ -206,6 +225,7 @@ class ChatController extends Controller
             'message' => $validated['message'] ?? '',
             'attachment_type' => $attachmentType,
             'attachment_path' => $attachmentPath,
+            'view_once' => $viewOnce,
         ]);
 
         // Send push notifications to other participant
@@ -217,7 +237,9 @@ class ChatController extends Controller
                 'id' => $message->id,
                 'message' => $message->message,
                 'attachment_type' => $message->attachment_type,
-                'attachment_path' => $message->attachment_path ? asset('storage/' . $message->attachment_path) : null,
+                'attachment_url' => $message->attachment_path ? asset('storage/' . $message->attachment_path) : null,
+                'view_once' => $message->view_once,
+                'view_once_viewed' => false,
                 'is_mine' => true,
                 'created_at' => $message->created_at,
                 'user' => [
@@ -225,6 +247,46 @@ class ChatController extends Controller
                 ],
             ],
         ]);
+    }
+
+    /**
+     * Mark a view-once image as viewed and return its URL.
+     */
+    public function viewOnce(Message $message)
+    {
+        $user = Auth::user();
+
+        // Verify user is part of the chat
+        if ($message->chat->user_one_id !== $user->id && $message->chat->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        if (!$message->view_once) {
+            return response()->json(['error' => 'Dit is geen eenmalig bericht'], 400);
+        }
+
+        if ($message->user_id === $user->id) {
+            return response()->json(['error' => 'Afzenders kunnen dit bericht niet als eenmalig bekijken'], 400);
+        }
+
+        $viewedBy = $message->view_once_viewed_by ?? [];
+
+        if (in_array($user->id, $viewedBy)) {
+            return response()->json(['error' => 'Je hebt dit bericht al bekeken'], 409);
+        }
+
+        if (!$message->attachment_path) {
+            return response()->json(['error' => 'Geen bijlage gevonden'], 404);
+        }
+
+        $url = asset('storage/' . $message->attachment_path);
+
+        // Mark as viewed
+        $viewedBy[] = $user->id;
+        $message->view_once_viewed_by = $viewedBy;
+        $message->save();
+
+        return response()->json(['url' => $url]);
     }
 
     /**

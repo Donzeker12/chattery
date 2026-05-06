@@ -18,6 +18,8 @@ class Message extends Model
         'is_read',
         'attachment_type',
         'attachment_path',
+        'view_once',
+        'view_once_viewed_by',
         'deleted_at',
         'deleted_for_users',
         'hidden_for_users',
@@ -30,6 +32,8 @@ class Message extends Model
         'deleted_at' => 'datetime',
         'deleted_for_users' => 'array',
         'hidden_for_users' => 'array',
+        'view_once' => 'boolean',
+        'view_once_viewed_by' => 'array',
         'edited_at' => 'datetime',
     ];
 
