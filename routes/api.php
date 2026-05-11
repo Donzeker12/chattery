@@ -14,7 +14,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/push/vapid-key', [PushNotificationController::class, 'getVapidPublicKey']);
 
 // Protected API routes
-Route::middleware(['web', 'auth'])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     

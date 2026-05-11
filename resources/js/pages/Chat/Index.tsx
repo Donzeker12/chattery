@@ -777,7 +777,7 @@ export default function Index({ chats, users, auth }: PageProps) {
 
     return (
         <>
-            <div className={`min-h-screen ${getBackgroundTheme()} transition-colors duration-200`}>
+            <div className={`h-dvh overflow-hidden ${getBackgroundTheme()} transition-colors duration-200`}>
                 {/* Modern Fixed Glass Sidebar */}
                 <div className={`${
                     isMobile 
