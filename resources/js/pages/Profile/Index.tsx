@@ -313,7 +313,6 @@ export default function Profile() {
                             </div>
                         </div>
                     </div>
-                </div>
 
                     {/* Download App Section */}
                     <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
