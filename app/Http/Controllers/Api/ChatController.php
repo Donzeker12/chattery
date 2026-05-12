@@ -37,6 +37,7 @@ class ChatController extends Controller
                         'id' => $otherUser->id,
                         'name' => $otherUser->name,
                         'is_online' => $isOnline,
+                        'created_at' => $otherUser->created_at?->toIso8601String(),
                         'profile_photo_url' => $otherUser->profile_photo_path
                             ? asset('storage/' . $otherUser->profile_photo_path)
                             : null,
@@ -183,6 +184,7 @@ class ChatController extends Controller
                     'id' => $otherUser->id,
                     'name' => $otherUser->name,
                     'is_online' => $isOnline,
+                    'created_at' => $otherUser->created_at?->toIso8601String(),
                     'profile_photo_url' => $otherUser->profile_photo_path
                         ? asset('storage/' . $otherUser->profile_photo_path)
                         : null,

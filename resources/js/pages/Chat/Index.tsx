@@ -7,10 +7,9 @@ import NotificationManager from '../../components/NotificationManager';
 interface User {
     id: number;
     name: string;
-    email: string;
     profile_photo_url?: string;
     is_online: boolean;
-    created_at: string;
+    created_at?: string;
     is_admin?: boolean;
 }
 
@@ -1736,11 +1735,13 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         <div>
                                             <span className="text-sm text-gray-500">Lid sinds:</span>
                                             <p className="font-medium">
-                                                {new Date(profileUser.created_at).toLocaleDateString('nl-NL', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
+                                                {profileUser.created_at
+                                                    ? new Date(profileUser.created_at).toLocaleDateString('nl-NL', {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric'
+                                                    })
+                                                    : 'Onbekend'}
                                             </p>
                                         </div>
                                     </div>
