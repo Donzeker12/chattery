@@ -42,8 +42,8 @@ class ChatController extends Controller
                     'participant' => [
                         'id' => $otherUser->id,
                         'name' => $otherUser->name,
-                        'email' => $otherUser->email,
                         'is_online' => $isOnline,
+                        'created_at' => $otherUser->created_at?->toIso8601String(),
                         'profile_photo_url' => $otherUser->profile_photo_path ? asset('storage/' . $otherUser->profile_photo_path) : null,
                     ],
                     'latest_message' => $chat->latestMessage ? [
@@ -172,8 +172,8 @@ class ChatController extends Controller
                 'participant' => [
                     'id' => $otherUser->id,
                     'name' => $otherUser->name,
-                    'email' => $otherUser->email,
                     'is_online' => $isOnline,
+                    'created_at' => $otherUser->created_at?->toIso8601String(),
                     'profile_photo_url' => $otherUser->profile_photo_path ? asset('storage/' . $otherUser->profile_photo_path) : null,
                 ],
             ],
@@ -361,8 +361,8 @@ class ChatController extends Controller
                     'participant' => [
                         'id' => $otherUser->id,
                         'name' => $otherUser->name,
-                        'email' => $otherUser->email,
                         'is_online' => $isOnline,
+                        'created_at' => $otherUser->created_at?->toIso8601String(),
                         'profile_photo_url' => $otherUser->profile_photo_path ? asset('storage/' . $otherUser->profile_photo_path) : null,
                     ],
                     'latest_message' => $chat->latestMessage ? [
@@ -396,21 +396,19 @@ class ChatController extends Controller
             return response()->json(['users' => []]);
         }
         
-        // Priority-based search: name matches first, then email starts
+        // Search only on name (not email)
         $users = User::where('id', '!=', $user->id)
             ->where(function ($q) use ($query) {
-                $q->where('name', 'LIKE', $query . '%')  // Name starts with query
-                  ->orWhere('name', 'LIKE', '% ' . $query . '%')  // Name contains query after space
-                  ->orWhere('email', 'LIKE', $query . '%');  // Email starts with query
+                $q->where('name', 'LIKE', $query . '%')
+                  ->orWhere('name', 'LIKE', '% ' . $query . '%');
             })
-            ->select('id', 'name', 'email', 'profile_photo_path')
+            ->select('id', 'name', 'profile_photo_path')
             ->limit(10)
             ->get()
             ->map(function ($u) {
                 return [
                     'id' => $u->id,
                     'name' => $u->name,
-                    'email' => $u->email,
                     'profile_photo_url' => $u->profile_photo_path ? asset('storage/' . $u->profile_photo_path) : null,
                 ];
             })
