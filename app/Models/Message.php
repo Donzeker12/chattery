@@ -25,6 +25,7 @@ class Message extends Model
         'hidden_for_users',
         'edited_at',
         'original_message',
+        'reply_to_id',
     ];
 
     protected $casts = [
@@ -59,5 +60,13 @@ class Message extends Model
     public function reactions(): HasMany
     {
         return $this->hasMany(Reaction::class);
+    }
+
+    /**
+     * Get the message this message is replying to.
+     */
+    public function replyTo(): BelongsTo
+    {
+        return $this->belongsTo(Message::class, 'reply_to_id');
     }
 }

@@ -81,7 +81,7 @@ class ChatController extends Controller
             ->update(['is_read' => true]);
 
         $messages = $chat->messages()
-            ->with(['user', 'reactions.user'])
+            ->with(['user', 'reactions.user', 'replyTo.user'])
             ->orderBy('created_at', 'asc')
             ->get()
             ->filter(function ($message) use ($user) {
@@ -123,6 +123,12 @@ class ChatController extends Controller
                     'user' => [
                         'name' => $message->user->name,
                     ],
+                    'reply_to' => $message->replyTo ? [
+                        'id' => $message->replyTo->id,
+                        'message' => $message->replyTo->message,
+                        'user_name' => $message->replyTo->user->name ?? 'Onbekend',
+                        'attachment_type' => $message->replyTo->attachment_type,
+                    ] : null,
                     'reactions' => $message->reactions->groupBy('emoji')->map(function ($reactions, $emoji) use ($user) {
                         return [
                             'emoji' => $emoji,
@@ -234,6 +240,7 @@ class ChatController extends Controller
             'message' => 'nullable|string|max:5000',
             'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,avif,bmp,svg|max:10240',
             'view_once' => 'nullable|boolean',
+            'reply_to_id' => 'nullable|integer|exists:messages,id',
         ]);
 
         // Check if we have either message content OR an attachment
@@ -269,7 +276,10 @@ class ChatController extends Controller
             'attachment_type' => $attachmentType,
             'attachment_path' => $attachmentPath,
             'view_once' => $viewOnce,
+            'reply_to_id' => $validated['reply_to_id'] ?? null,
         ]);
+
+        $message->load('replyTo.user');
 
         // Send push notifications to other participant
         $otherUser = $chat->otherParticipant($user->id);
@@ -288,6 +298,12 @@ class ChatController extends Controller
                 'user' => [
                     'name' => $user->name,
                 ],
+                'reply_to' => $message->replyTo ? [
+                    'id' => $message->replyTo->id,
+                    'message' => $message->replyTo->message,
+                    'user_name' => $message->replyTo->user->name ?? 'Onbekend',
+                    'attachment_type' => $message->replyTo->attachment_type,
+                ] : null,
                 'reactions' => [],
             ],
         ]);
