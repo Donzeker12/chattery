@@ -20,6 +20,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // Profile
     Route::post('/profile/password', [ProfileController::class, 'changePassword']);
+    Route::post('/profile/photo', [ProfileController::class, 'uploadPhoto']);
+    Route::delete('/profile/photo', [ProfileController::class, 'deletePhoto']);
+    Route::get('/profile/photo', [ProfileController::class, 'getPhotoUrl']);
     
     // Push notifications
     Route::post('/push/subscribe', [PushNotificationController::class, 'subscribe']);

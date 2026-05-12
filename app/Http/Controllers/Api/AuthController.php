@@ -36,6 +36,9 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'is_admin' => $user->is_admin,
+                'profile_photo_url' => $user->profile_photo_path
+                    ? asset('storage/' . $user->profile_photo_path)
+                    : null,
             ],
             'token' => $token,
         ], 201);
@@ -76,6 +79,9 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'is_admin' => $user->is_admin,
+                'profile_photo_url' => $user->profile_photo_path
+                    ? asset('storage/' . $user->profile_photo_path)
+                    : null,
             ],
             'token' => $token,
         ]);
@@ -106,6 +112,9 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'is_admin' => $user->is_admin,
+                'profile_photo_url' => $user->profile_photo_path
+                    ? asset('storage/' . $user->profile_photo_path)
+                    : null,
             ],
         ]);
     }

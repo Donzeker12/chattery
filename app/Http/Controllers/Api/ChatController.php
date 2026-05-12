@@ -38,6 +38,9 @@ class ChatController extends Controller
                         'name' => $otherUser->name,
                         'email' => $otherUser->email,
                         'is_online' => $isOnline,
+                        'profile_photo_url' => $otherUser->profile_photo_path
+                            ? asset('storage/' . $otherUser->profile_photo_path)
+                            : null,
                     ],
                     'latest_message' => $chat->latestMessage ? [
                         'message' => $chat->latestMessage->message,
@@ -144,6 +147,9 @@ class ChatController extends Controller
                     'name' => $otherUser->name,
                     'email' => $otherUser->email,
                     'is_online' => $isOnline,
+                    'profile_photo_url' => $otherUser->profile_photo_path
+                        ? asset('storage/' . $otherUser->profile_photo_path)
+                        : null,
                 ],
             ],
             'messages' => $messages,
