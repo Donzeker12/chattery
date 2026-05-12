@@ -36,7 +36,6 @@ class ChatController extends Controller
                     'participant' => [
                         'id' => $otherUser->id,
                         'name' => $otherUser->name,
-                        'email' => $otherUser->email,
                         'is_online' => $isOnline,
                         'profile_photo_url' => $otherUser->profile_photo_path
                             ? asset('storage/' . $otherUser->profile_photo_path)
@@ -183,7 +182,6 @@ class ChatController extends Controller
                 'participant' => [
                     'id' => $otherUser->id,
                     'name' => $otherUser->name,
-                    'email' => $otherUser->email,
                     'is_online' => $isOnline,
                     'profile_photo_url' => $otherUser->profile_photo_path
                         ? asset('storage/' . $otherUser->profile_photo_path)
@@ -557,13 +555,12 @@ class ChatController extends Controller
         $user = Auth::user();
         
         $users = User::where('id', '!=', $user->id)
-            ->select('id', 'name', 'email', 'profile_photo_path')
+            ->select('id', 'name', 'profile_photo_path')
             ->get()
             ->map(function ($u) {
                 return [
                     'id' => $u->id,
                     'name' => $u->name,
-                    'email' => $u->email,
                     'profile_photo_url' => $u->profile_photo_path ? asset('storage/' . $u->profile_photo_path) : null,
                 ];
             });

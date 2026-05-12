@@ -512,8 +512,7 @@ export default function Index({ chats, users, auth }: PageProps) {
             
             // Filter users based on query (client-side search)
             const filteredUsers = allUsers.filter((user: any) => 
-                user.name.toLowerCase().includes(query.toLowerCase()) ||
-                user.email.toLowerCase().includes(query.toLowerCase())
+                user.name.toLowerCase().includes(query.toLowerCase())
             );
             
             setSearchResults(filteredUsers);
@@ -1734,10 +1733,6 @@ export default function Index({ chats, users, auth }: PageProps) {
                                 <div>
                                     <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Informatie</h3>
                                     <div className="space-y-3">
-                                        <div>
-                                            <span className="text-sm text-gray-500">E-mail:</span>
-                                            <p className="font-medium">{profileUser.email}</p>
-                                        </div>
                                         <div>
                                             <span className="text-sm text-gray-500">Lid sinds:</span>
                                             <p className="font-medium">
