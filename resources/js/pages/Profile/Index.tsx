@@ -315,6 +315,39 @@ export default function Profile() {
                     </div>
                 </div>
 
+                    {/* Download App Section */}
+                    <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                            <svg className="w-6 h-6 mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16l-6-6m6 6l6-6m-6 6V4" />
+                            </svg>
+                            Download de Android App
+                        </h2>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                            <div className="flex-1">
+                                <p className="text-gray-600 mb-2">
+                                    Gebruik Chattery ook op je Android telefoon. Download de app en log in met je account.
+                                </p>
+                                <ul className="text-sm text-gray-500 space-y-1">
+                                    <li>• Zet "Installeren van onbekende bronnen" aan in instellingen</li>
+                                    <li>• Download en open het APK-bestand</li>
+                                    <li>• Log in met hetzelfde account</li>
+                                </ul>
+                            </div>
+                            <a
+                                href="/downloads/chattery.apk"
+                                download
+                                className="flex items-center gap-3 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-md whitespace-nowrap"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download APK
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Success Modal */}
                 <SuccessModal 
                     isOpen={showSuccessModal}
