@@ -64,8 +64,11 @@ class ChatController extends Controller
 
     /**
      * Get messages for a specific chat.
+     * Supports cursor-based pagination via query params:
+     *   before_id — load older messages (load more)
+     *   after_id  — load newer messages (auto-refresh polling)
      */
-    public function show(Chat $chat)
+    public function show(Request $request, Chat $chat)
     {
         $user = Auth::user();
         $onlineThreshold = now()->subMinutes(5);
@@ -80,10 +83,43 @@ class ChatController extends Controller
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
-        $messages = $chat->messages()
-            ->with(['user', 'reactions.user', 'replyTo.user'])
-            ->orderBy('created_at', 'asc')
-            ->get()
+        $perPage = 30;
+        $beforeId = $request->query('before_id');
+        $afterId  = $request->query('after_id');
+
+        $query = $chat->messages()
+            ->with(['user', 'reactions.user', 'replyTo.user']);
+
+        if ($afterId) {
+            // Poll for new messages only (no limit needed)
+            $query->where('id', '>', (int) $afterId)
+                  ->orderBy('created_at', 'asc');
+            $rawMessages = $query->get();
+            $hasMore = false;
+        } elseif ($beforeId) {
+            // Load older messages (paginated)
+            $query->where('id', '<', (int) $beforeId)
+                  ->orderBy('created_at', 'desc')
+                  ->limit($perPage + 1);
+            $rawMessages = $query->get();
+            $hasMore = $rawMessages->count() > $perPage;
+            if ($hasMore) {
+                $rawMessages = $rawMessages->slice(0, $perPage);
+            }
+            $rawMessages = $rawMessages->sortBy('created_at')->values();
+        } else {
+            // Initial load: latest messages
+            $query->orderBy('created_at', 'desc')
+                  ->limit($perPage + 1);
+            $rawMessages = $query->get();
+            $hasMore = $rawMessages->count() > $perPage;
+            if ($hasMore) {
+                $rawMessages = $rawMessages->slice(0, $perPage);
+            }
+            $rawMessages = $rawMessages->sortBy('created_at')->values();
+        }
+
+        $messages = $rawMessages
             ->filter(function ($message) use ($user) {
                 if ($message->deleted_at) return false;
                 $deletedForUsers = $message->deleted_for_users ?? [];
@@ -94,14 +130,10 @@ class ChatController extends Controller
                 $isMine = $message->user_id === $user->id;
                 $isViewOnce = (bool) $message->view_once;
                 $viewOnceViewedBy = $message->view_once_viewed_by ?? [];
-                // Sender: has the recipient seen it? (anyone in the array)
-                // Receiver: have I already seen it?
                 $viewOnceViewed = $isMine
                     ? !empty($viewOnceViewedBy)
                     : in_array($user->id, $viewOnceViewedBy);
 
-                // For view_once images, only expose the URL to the sender
-                // The receiver gets the URL only via the dedicated view-once endpoint
                 $attachmentUrl = null;
                 if ($message->attachment_path) {
                     if (!$isViewOnce || $isMine) {
@@ -159,6 +191,7 @@ class ChatController extends Controller
                 ],
             ],
             'messages' => $messages,
+            'has_more' => $hasMore,
         ]);
     }
 
