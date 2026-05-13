@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendFcmNotification;
 use App\Jobs\SendPushNotification;
 use App\Models\Chat;
 use App\Models\Message;
@@ -661,8 +662,11 @@ class ChatController extends Controller
      */
     private function sendPushNotification(User $recipient, User $sender, Message $message): void
     {
-        // Don't send notifications if user has no subscriptions
-        if ($recipient->pushSubscriptions->isEmpty()) {
+        $webSubscriptions = $recipient->pushSubscriptions;
+        $mobileTokens = $recipient->mobilePushTokens;
+
+        // Don't send notifications if user has no supported subscriptions
+        if ($webSubscriptions->isEmpty() && $mobileTokens->isEmpty()) {
             return;
         }
 
@@ -690,9 +694,14 @@ class ChatController extends Controller
             'sender_name' => $sender->name,
         ];
 
-        // Queue push notification for each subscription
-        foreach ($recipient->pushSubscriptions as $subscription) {
+        // Queue web push notifications for browser/PWA subscriptions
+        foreach ($webSubscriptions as $subscription) {
             SendPushNotification::dispatch($subscription, $title, $body, $data);
+        }
+
+        // Queue native mobile push notifications for FCM tokens
+        foreach ($mobileTokens as $mobileToken) {
+            SendFcmNotification::dispatch($mobileToken, $title, $body, $data);
         }
     }
 

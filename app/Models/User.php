@@ -66,4 +66,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(PushSubscription::class);
     }
+
+    /**
+     * Get all mobile push tokens for the user.
+     */
+    public function mobilePushTokens(): HasMany
+    {
+        return $this->hasMany(MobilePushToken::class);
+    }
 }

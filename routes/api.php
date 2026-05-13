@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\MobilePushTokenController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushNotificationController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +29,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/push/subscribe', [PushNotificationController::class, 'subscribe']);
     Route::post('/push/unsubscribe', [PushNotificationController::class, 'unsubscribe']);
     Route::post('/push/test', [PushNotificationController::class, 'test']);
+    Route::post('/push/mobile-token', [MobilePushTokenController::class, 'store']);
+    Route::delete('/push/mobile-token', [MobilePushTokenController::class, 'destroy']);
     
     // Chats
     Route::get('/chats', [ChatController::class, 'index']);
