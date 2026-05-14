@@ -33,6 +33,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/photo', [ProfileController::class, 'getPhotoUrl'])->name('profile.photo.get');
     Route::post('/profile/password', [ProfileController::class, 'changePassword'])->name('profile.password.change');
     
+    // Settings routes
+    Route::get('/settings', function () {
+        return Inertia::render('Settings/Index');
+    })->name('settings');
+    
     Route::get('/chat', [ChatController::class, 'index'])->name('chat');
     Route::get('/chat/list', [ChatController::class, 'getChatList'])->name('chat.list');
     Route::get('/chat/search-users', [ChatController::class, 'searchUsers'])->name('chat.search-users');
