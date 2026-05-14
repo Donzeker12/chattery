@@ -84,6 +84,8 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [chatsList, setChatsList] = useState<Chat[]>(Array.isArray(chats) ? chats : []);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
+    const [hasMoreMessages, setHasMoreMessages] = useState(false);
+    const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [profileUser, setProfileUser] = useState<User | null>(null);
@@ -294,11 +296,20 @@ export default function Index({ chats, users, auth }: PageProps) {
     // Add scroll listener for messages container
     useEffect(() => {
         const container = messagesContainerRef.current;
-        if (container) {
-            container.addEventListener('scroll', checkIfAtBottom);
-            return () => container.removeEventListener('scroll', checkIfAtBottom);
-        }
-    }, [selectedChat]);
+        if (!container) return;
+
+        const handleScroll = () => {
+            checkIfAtBottom();
+            // Load older messages when user scrolls near top
+            if (container.scrollTop < 80) {
+                loadOlderMessages();
+            }
+        };
+
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedChat, hasMoreMessages, loadingOlderMessages, messages]);
 
     const scrollToBottom = () => {
         // Gebruik instant scroll altijd voor snelste respons
@@ -483,9 +494,11 @@ export default function Index({ chats, users, auth }: PageProps) {
     const loadChat = async (chatId: number) => {
         setLoadingMessages(true);
         setMessages([]);
+        setHasMoreMessages(false);
         try {
             const response = await axios.get(`/api/chats/${chatId}`);
             setMessages(response.data.messages || []);
+            setHasMoreMessages(response.data.has_more ?? false);
             
             // Only update participant if we got one from the API and don't already have one
             if (response.data.participant && !currentParticipant) {
@@ -498,6 +511,38 @@ export default function Index({ chats, users, auth }: PageProps) {
             console.error('Error loading chat:', error);
         } finally {
             setLoadingMessages(false);
+        }
+    };
+
+    const loadOlderMessages = async () => {
+        if (!selectedChat || loadingOlderMessages || !hasMoreMessages) return;
+
+        const oldestId = messages[0]?.id;
+        if (!oldestId) return;
+
+        setLoadingOlderMessages(true);
+        const container = messagesContainerRef.current;
+        const prevScrollHeight = container?.scrollHeight ?? 0;
+
+        try {
+            const response = await axios.get(`/api/chats/${selectedChat}`, {
+                params: { before_id: oldestId },
+            });
+            const older = response.data.messages || [];
+            setHasMoreMessages(response.data.has_more ?? false);
+            if (older.length > 0) {
+                setMessages(prev => [...older, ...prev]);
+                // Maintain scroll position so user doesn't jump
+                requestAnimationFrame(() => {
+                    if (container) {
+                        container.scrollTop = container.scrollHeight - prevScrollHeight;
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error loading older messages:', error);
+        } finally {
+            setLoadingOlderMessages(false);
         }
     };
 
@@ -1283,6 +1328,16 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     </div>
                                 ) : (
                                     <div className="p-3 sm:p-4 space-y-4">
+                                        {loadingOlderMessages && (
+                                            <div className="flex justify-center py-2">
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                                            </div>
+                                        )}
+                                        {!loadingOlderMessages && hasMoreMessages && (
+                                            <div className="flex justify-center py-1">
+                                                <span className="text-xs text-gray-400">Scroll omhoog voor oudere berichten</span>
+                                            </div>
+                                        )}
                                         {messages.map((message, index) => (
                                             <div key={message.id} className="group">
                                                 <div className={`flex ${message.is_mine ? 'justify-end' : 'justify-start'} mb-2`}>
