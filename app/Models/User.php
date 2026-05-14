@@ -12,7 +12,20 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'last_seen_at', 'profile_photo_path', 'is_hidden', 'hidden_chat_ids'])]
+#[Fillable([
+    'name',
+    'email',
+    'password',
+    'last_seen_at',
+    'profile_photo_path',
+    'is_hidden',
+    'hidden_chat_ids',
+    'chat_theme',
+    'dark_mode',
+    'chat_animations',
+    'sound_notifications',
+    'show_typing_indicator',
+])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -34,6 +47,10 @@ class User extends Authenticatable
             'is_hidden' => 'boolean',
             'last_seen_at' => 'datetime',
             'hidden_chat_ids' => 'array',
+            'dark_mode' => 'boolean',
+            'chat_animations' => 'boolean',
+            'sound_notifications' => 'boolean',
+            'show_typing_indicator' => 'boolean',
         ];
     }
 

@@ -32,6 +32,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile/photo', [ProfileController::class, 'deletePhoto'])->name('profile.photo.delete');
     Route::get('/profile/photo', [ProfileController::class, 'getPhotoUrl'])->name('profile.photo.get');
     Route::post('/profile/password', [ProfileController::class, 'changePassword'])->name('profile.password.change');
+    Route::post('/settings/preferences', [ProfileController::class, 'updatePreferences'])->name('settings.preferences.update');
     
     // Settings routes
     Route::get('/settings', function () {

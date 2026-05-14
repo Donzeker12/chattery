@@ -11,6 +11,11 @@ interface User {
     is_online: boolean;
     created_at?: string;
     is_admin?: boolean;
+    chat_theme?: string;
+    dark_mode?: boolean;
+    chat_animations?: boolean;
+    sound_notifications?: boolean;
+    show_typing_indicator?: boolean;
 }
 
 interface Chat {
@@ -85,9 +90,13 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [photoUploading, setPhotoUploading] = useState(false);
     const [photoUploadMsg, setPhotoUploadMsg] = useState<string | null>(null);
+    const [savingPreferences, setSavingPreferences] = useState(false);
     const photoInputRef = useRef<HTMLInputElement>(null);
     const [darkMode, setDarkMode] = useState(() => {
-        // Initialize from localStorage
+        if (typeof auth.user.dark_mode === 'boolean') {
+            return auth.user.dark_mode;
+        }
+
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('darkMode');
             return saved === 'true';
@@ -95,12 +104,20 @@ export default function Index({ chats, users, auth }: PageProps) {
         return false;
     });
     const [chatTheme, setChatTheme] = useState(() => {
+        if (auth.user.chat_theme) {
+            return auth.user.chat_theme;
+        }
+
         if (typeof window !== 'undefined') {
             return localStorage.getItem('chatTheme') || 'default';
         }
         return 'default';
     });
     const [chatAnimations, setChatAnimations] = useState(() => {
+        if (typeof auth.user.chat_animations === 'boolean') {
+            return auth.user.chat_animations;
+        }
+
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('chatAnimations');
             return saved !== 'false'; // Default true
@@ -108,6 +125,10 @@ export default function Index({ chats, users, auth }: PageProps) {
         return true;
     });
     const [soundNotifications, setSoundNotifications] = useState(() => {
+        if (typeof auth.user.sound_notifications === 'boolean') {
+            return auth.user.sound_notifications;
+        }
+
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('soundNotifications');
             return saved !== 'false'; // Default true
@@ -115,6 +136,10 @@ export default function Index({ chats, users, auth }: PageProps) {
         return true;
     });
     const [showTypingIndicator, setShowTypingIndicator] = useState(() => {
+        if (typeof auth.user.show_typing_indicator === 'boolean') {
+            return auth.user.show_typing_indicator;
+        }
+
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('showTypingIndicator');
             return saved !== 'false'; // Default true
@@ -294,7 +319,10 @@ export default function Index({ chats, users, auth }: PageProps) {
 
     // Poll typing status every 2 seconds when chat is open
     useEffect(() => {
-        if (!selectedChat) return;
+        if (!selectedChat || !showTypingIndicator) {
+            setIsOtherUserTyping(false);
+            return;
+        }
         
         const checkTypingStatus = async () => {
             try {
@@ -312,7 +340,7 @@ export default function Index({ chats, users, auth }: PageProps) {
         const interval = setInterval(checkTypingStatus, 2000);
         
         return () => clearInterval(interval);
-    }, [selectedChat]);
+    }, [selectedChat, showTypingIndicator]);
 
     // Cleanup preview URL on component unmount
     useEffect(() => {
@@ -369,6 +397,27 @@ export default function Index({ chats, users, auth }: PageProps) {
 
     const handleLogout = () => {
         router.post('/logout');
+    };
+
+    const saveChatPreferences = async () => {
+        setSavingPreferences(true);
+        try {
+            await axios.post('/settings/preferences', {
+                chat_theme: chatTheme,
+                dark_mode: darkMode,
+                chat_animations: chatAnimations,
+                sound_notifications: soundNotifications,
+                show_typing_indicator: showTypingIndicator,
+            });
+
+            alert('Instellingen opgeslagen!');
+            setShowSettingsModal(false);
+        } catch (error) {
+            console.error('Error saving preferences:', error);
+            alert('Instellingen konden niet opgeslagen worden.');
+        } finally {
+            setSavingPreferences(false);
+        }
     };
 
     const loadChat = async (chatId: number) => {
@@ -1268,7 +1317,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         ))}
                                         
                                         {/* Typing indicator */}
-                                        {isOtherUserTyping && currentParticipant && (
+                                        {showTypingIndicator && isOtherUserTyping && currentParticipant && (
                                             <div className="flex items-start space-x-2 mb-4 animate-fade-in">
                                                 <Avatar 
                                                     photoUrl={currentParticipant.profile_photo_url}
@@ -2121,13 +2170,11 @@ export default function Index({ chats, users, auth }: PageProps) {
                                 {/* Save Button */}
                                 <div className="flex gap-3 pt-4 border-t border-gray-200">
                                     <button
-                                        onClick={() => {
-                                            alert('Instellingen opgeslagen! 🎉');
-                                            setShowSettingsModal(false);
-                                        }}
+                                        onClick={saveChatPreferences}
+                                        disabled={savingPreferences}
                                         className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                                     >
-                                        Instellingen opslaan
+                                        {savingPreferences ? 'Opslaan...' : 'Instellingen opslaan'}
                                     </button>
                                     <button
                                         onClick={() => setShowSettingsModal(false)}

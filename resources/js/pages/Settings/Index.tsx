@@ -10,6 +10,11 @@ interface User {
     email: string;
     is_admin?: boolean;
     profile_photo_url?: string | null;
+    chat_theme?: string;
+    dark_mode?: boolean;
+    chat_animations?: boolean;
+    sound_notifications?: boolean;
+    show_typing_indicator?: boolean;
 }
 
 interface PageProps {
@@ -35,6 +40,14 @@ interface ExtraSettings {
     typingIndicator: boolean;
 }
 
+interface PreferencesPayload {
+    chat_theme?: string;
+    dark_mode?: boolean;
+    chat_animations?: boolean;
+    sound_notifications?: boolean;
+    show_typing_indicator?: boolean;
+}
+
 export default function Settings() {
     const { auth } = usePage<PageProps>().props;
     const [activeTab, setActiveTab] = useState<SettingsTab>('profiel');
@@ -44,12 +57,12 @@ export default function Settings() {
     const [showPasswordForm, setShowPasswordForm] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
-    const [selectedTheme, setSelectedTheme] = useState('default');
+    const [selectedTheme, setSelectedTheme] = useState(auth.user.chat_theme || 'default');
     const [extraSettings, setExtraSettings] = useState<ExtraSettings>({
-        darkMode: false,
-        chatAnimations: true,
-        soundNotifications: true,
-        typingIndicator: true,
+        darkMode: auth.user.dark_mode ?? false,
+        chatAnimations: auth.user.chat_animations ?? true,
+        soundNotifications: auth.user.sound_notifications ?? true,
+        typingIndicator: auth.user.show_typing_indicator ?? true,
     });
     
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -109,16 +122,48 @@ export default function Settings() {
 
     const handleThemeChange = (theme: string) => {
         setSelectedTheme(theme);
-        setSuccessMessage(`Thema gewijzigd naar ${theme}!`);
-        setShowSuccessModal(true);
-        setTimeout(() => setShowSuccessModal(false), 3000);
+        void savePreferences({ chat_theme: theme }, `Thema gewijzigd naar ${theme}!`);
     };
 
     const handleExtraSettingChange = (setting: keyof ExtraSettings) => {
-        setExtraSettings((prev) => ({
-            ...prev,
-            [setting]: !prev[setting],
-        }));
+        setExtraSettings((prev) => {
+            const nextValue = !prev[setting];
+            const keyMap: Record<keyof ExtraSettings, keyof PreferencesPayload> = {
+                darkMode: 'dark_mode',
+                chatAnimations: 'chat_animations',
+                soundNotifications: 'sound_notifications',
+                typingIndicator: 'show_typing_indicator',
+            };
+
+            const labelMap: Record<keyof ExtraSettings, string> = {
+                darkMode: 'Donkere modus',
+                chatAnimations: 'Chat animaties',
+                soundNotifications: 'Geluidsmeldingen',
+                typingIndicator: 'Typing indicator',
+            };
+
+            void savePreferences(
+                { [keyMap[setting]]: nextValue },
+                `${labelMap[setting]} ${nextValue ? 'ingeschakeld' : 'uitgeschakeld'}`
+            );
+
+            return {
+                ...prev,
+                [setting]: nextValue,
+            };
+        });
+    };
+
+    const savePreferences = async (payload: PreferencesPayload, successText: string) => {
+        try {
+            await axios.post('/settings/preferences', payload);
+            setSuccessMessage(successText);
+            setShowSuccessModal(true);
+            setTimeout(() => setShowSuccessModal(false), 3000);
+        } catch (error) {
+            console.error('Error saving preferences:', error);
+            alert('Instellingen konden niet opgeslagen worden');
+        }
     };
 
     const handleBackToChat = () => {

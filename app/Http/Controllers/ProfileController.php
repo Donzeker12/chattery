@@ -116,4 +116,34 @@ class ProfileController extends Controller
 
         return back()->with('success', 'Wachtwoord succesvol gewijzigd!');
     }
+
+    /**
+     * Update user UI preferences.
+     */
+    public function updatePreferences(Request $request)
+    {
+        $validated = $request->validate([
+            'chat_theme' => 'sometimes|string|in:default,dark,nature,sunset,ocean,lavender',
+            'dark_mode' => 'sometimes|boolean',
+            'chat_animations' => 'sometimes|boolean',
+            'sound_notifications' => 'sometimes|boolean',
+            'show_typing_indicator' => 'sometimes|boolean',
+        ]);
+
+        $user = Auth::user();
+        $user->fill($validated);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Instellingen opgeslagen',
+            'preferences' => [
+                'chat_theme' => $user->chat_theme ?? 'default',
+                'dark_mode' => (bool) $user->dark_mode,
+                'chat_animations' => (bool) $user->chat_animations,
+                'sound_notifications' => (bool) $user->sound_notifications,
+                'show_typing_indicator' => (bool) $user->show_typing_indicator,
+            ],
+        ]);
+    }
 }
