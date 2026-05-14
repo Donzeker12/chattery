@@ -1364,8 +1364,35 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 <span className="text-xs text-gray-400">Scroll omhoog voor oudere berichten</span>
                                             </div>
                                         )}
-                                        {messages.map((message, index) => (
-                                            <div key={message.id} className="group">
+                                        {messages.map((message, index) => {
+                                            // Date separator logic
+                                            const msgDate = new Date(message.created_at);
+                                            const prevMsg = messages[index - 1];
+                                            const prevDate = prevMsg ? new Date(prevMsg.created_at) : null;
+                                            const showDateSeparator = !prevDate ||
+                                                msgDate.getFullYear() !== prevDate.getFullYear() ||
+                                                msgDate.getMonth() !== prevDate.getMonth() ||
+                                                msgDate.getDate() !== prevDate.getDate();
+
+                                            const formatDateLabel = (date: Date) => {
+                                                const today = new Date();
+                                                const yesterday = new Date(today);
+                                                yesterday.setDate(today.getDate() - 1);
+                                                if (date.toDateString() === today.toDateString()) return 'Vandaag';
+                                                if (date.toDateString() === yesterday.toDateString()) return 'Gisteren';
+                                                return date.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                                            };
+
+                                            return (
+                                            <div key={message.id}>
+                                                {showDateSeparator && (
+                                                    <div className="flex items-center justify-center my-4">
+                                                        <span className="bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-medium px-3 py-1 rounded-full">
+                                                            {formatDateLabel(msgDate)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            <div className="group">
                                                 <div className={`flex ${message.is_mine ? 'justify-end' : 'justify-start'} mb-2`}>
                                                     <div className={`flex flex-col ${message.is_mine ? 'items-end' : 'items-start'} max-w-xs lg:max-w-md`}>
                                                         <div 
@@ -1560,7 +1587,8 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                     </div>
                                                 )}
                                             </div>
-                                        ))}
+                                            </div>
+                                        );})}
                                         
                                         {/* Typing indicator */}
                                         {showTypingIndicator && isOtherUserTyping && currentParticipant && (
