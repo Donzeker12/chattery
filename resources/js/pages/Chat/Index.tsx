@@ -175,6 +175,8 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [mediaItems, setMediaItems] = useState<any[]>([]);
     const [mediaFilter, setMediaFilter] = useState<'all' | 'images' | 'files'>('all');
     const [loadingMedia, setLoadingMedia] = useState(false);
+    const [showMediaDeleteConfirm, setShowMediaDeleteConfirm] = useState<{ messageId: number; deleteForEveryone: boolean } | null>(null);
+    const [mediaDeleteFeedback, setMediaDeleteFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     
     // Refs
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -207,6 +209,16 @@ export default function Index({ chats, users, auth }: PageProps) {
             observer.disconnect();
         };
     }, []);
+
+    useEffect(() => {
+        if (!mediaDeleteFeedback) return;
+
+        const timer = setTimeout(() => {
+            setMediaDeleteFeedback(null);
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [mediaDeleteFeedback]);
 
     // Close delete menu when clicking outside
     useEffect(() => {
@@ -698,12 +710,6 @@ export default function Index({ chats, users, auth }: PageProps) {
     };
 
     const deleteMediaItem = async (messageId: number, deleteForEveryone: boolean) => {
-        const confirmText = deleteForEveryone
-            ? 'Weet je zeker dat je deze media voor iedereen wilt verwijderen?'
-            : 'Weet je zeker dat je deze media voor jezelf wilt verwijderen?';
-
-        if (!confirm(confirmText)) return;
-
         try {
             if (deleteForEveryone) {
                 await axios.delete(`/api/messages/${messageId}/delete-for-everyone`);
@@ -714,9 +720,18 @@ export default function Index({ chats, users, auth }: PageProps) {
             setMediaItems(prev => prev.filter(item => item.id !== messageId));
             await refreshMessages();
             await refreshChatList();
+            setMediaDeleteFeedback({
+                type: 'success',
+                text: deleteForEveryone
+                    ? 'Media is verwijderd voor iedereen.'
+                    : 'Media is verwijderd voor jezelf.',
+            });
         } catch (error) {
             console.error('Error deleting media item:', error);
-            alert('Er is een fout opgetreden bij het verwijderen van de media.');
+            setMediaDeleteFeedback({
+                type: 'error',
+                text: 'Er is een fout opgetreden bij het verwijderen van de media.',
+            });
         }
     };
 
@@ -2319,7 +2334,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                deleteMediaItem(item.id, false);
+                                                                setShowMediaDeleteConfirm({ messageId: item.id, deleteForEveryone: false });
                                                             }}
                                                             className="p-1.5 bg-black/60 text-white rounded-md hover:bg-black/80 transition"
                                                             title="Verwijder voor mezelf"
@@ -2332,7 +2347,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    deleteMediaItem(item.id, true);
+                                                                    setShowMediaDeleteConfirm({ messageId: item.id, deleteForEveryone: true });
                                                                 }}
                                                                 className="p-1.5 bg-red-600/85 text-white rounded-md hover:bg-red-700 transition"
                                                                 title="Verwijder voor iedereen"
@@ -2432,6 +2447,68 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Media Delete Confirmation Modal */}
+                {showMediaDeleteConfirm && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+                            <div className="p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            {showMediaDeleteConfirm.deleteForEveryone
+                                                ? 'Media voor iedereen verwijderen?'
+                                                : 'Media voor mezelf verwijderen?'}
+                                        </h3>
+                                        <p className="text-sm text-gray-600">
+                                            {showMediaDeleteConfirm.deleteForEveryone
+                                                ? 'Dit item verdwijnt voor alle gespreksdeelnemers.'
+                                                : 'Dit item wordt alleen voor jou verborgen.'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setShowMediaDeleteConfirm(null)}
+                                        className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition"
+                                    >
+                                        Annuleren
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            const payload = showMediaDeleteConfirm;
+                                            setShowMediaDeleteConfirm(null);
+                                            await deleteMediaItem(payload.messageId, payload.deleteForEveryone);
+                                        }}
+                                        className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition"
+                                    >
+                                        {showMediaDeleteConfirm.deleteForEveryone ? 'Verwijder voor iedereen' : 'Verwijder voor mezelf'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {mediaDeleteFeedback && (
+                    <div className="fixed top-4 right-4 z-[60]">
+                        <div
+                            className={`px-4 py-3 rounded-xl shadow-lg text-sm font-medium border ${
+                                mediaDeleteFeedback.type === 'success'
+                                    ? 'bg-green-50 text-green-700 border-green-200'
+                                    : 'bg-red-50 text-red-700 border-red-200'
+                            }`}
+                        >
+                            {mediaDeleteFeedback.text}
                         </div>
                     </div>
                 )}
