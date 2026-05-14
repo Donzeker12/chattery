@@ -2093,9 +2093,9 @@ export default function Index({ chats, users, auth }: PageProps) {
                             </div>
 
                             {/* Scrollable body */}
-                            <div className="overflow-y-auto flex-1">
+                            <div className="overflow-y-auto flex-1 overflow-x-hidden">
                                 {/* Avatar overlapping hero */}
-                                <div className="flex flex-col items-center -mt-12 px-6 pb-2">
+                                <div className="flex flex-col items-center -mt-8 px-6 pb-2">
                                     <div
                                         className={`relative cursor-pointer rounded-full ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 ${profileUser.is_online ? 'ring-green-400' : 'ring-gray-300 dark:ring-gray-600'}`}
                                         onClick={() => profileUser.profile_photo_url && setFullscreenImage(profileUser.profile_photo_url)}
