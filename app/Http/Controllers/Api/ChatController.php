@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SendFcmNotification;
 use App\Jobs\SendPushNotification;
 use App\Models\Chat;
+use App\Models\ChatSecurityEvent;
 use App\Models\Message;
 use App\Models\Reaction;
 use App\Models\User;
@@ -680,6 +681,46 @@ class ChatController extends Controller
 
         return response()->json([
             'is_typing' => $isTyping,
+        ]);
+    }
+
+    /**
+     * Report a possible screenshot attempt for a chat.
+     */
+    public function reportScreenshotAttempt(Request $request, Chat $chat)
+    {
+        $user = Auth::user();
+
+        if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
+            return response()->json(['error' => 'Niet geautoriseerd'], 403);
+        }
+
+        $validated = $request->validate([
+            'trigger' => 'nullable|string|max:100',
+        ]);
+
+        $throttleKey = "chat.{$chat->id}.user.{$user->id}.screenshot_attempt";
+        if (Cache::has($throttleKey)) {
+            return response()->json([
+                'success' => true,
+                'logged' => false,
+            ]);
+        }
+
+        Cache::put($throttleKey, true, now()->addSeconds(15));
+
+        ChatSecurityEvent::create([
+            'chat_id' => $chat->id,
+            'user_id' => $user->id,
+            'event_type' => 'screenshot_attempt',
+            'trigger' => $validated['trigger'] ?? 'unknown',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'logged' => true,
         ]);
     }
 }

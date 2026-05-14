@@ -51,6 +51,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Typing indicator
     Route::post('/chats/{chat}/typing', [ChatController::class, 'updateTypingStatus']);
     Route::get('/chats/{chat}/typing', [ChatController::class, 'getTypingStatus']);
+
+    // Security events
+    Route::post('/chats/{chat}/screenshot-attempt', [ChatController::class, 'reportScreenshotAttempt']);
     
     // Reactions
     Route::post('/messages/{message}/reactions', [ChatController::class, 'addReaction']);

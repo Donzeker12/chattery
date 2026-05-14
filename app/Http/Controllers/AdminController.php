@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AdminLog;
+use App\Models\ChatSecurityEvent;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -33,10 +34,42 @@ class AdminController extends Controller
 
         $onlineCount = collect($users)->where('is_online', true)->count();
 
+        $screenshotEvents = ChatSecurityEvent::query()
+            ->where('event_type', 'screenshot_attempt')
+            ->with([
+                'user:id,name',
+                'chat.userOne:id,name',
+                'chat.userTwo:id,name',
+            ])
+            ->latest()
+            ->limit(30)
+            ->get()
+            ->map(function ($event) {
+                $chatUserOne = $event->chat?->userOne?->name ?? 'Onbekend';
+                $chatUserTwo = $event->chat?->userTwo?->name ?? 'Onbekend';
+
+                return [
+                    'id' => $event->id,
+                    'user_name' => $event->user?->name ?? 'Onbekend',
+                    'chat_label' => "{$chatUserOne} & {$chatUserTwo}",
+                    'trigger' => $event->trigger ?? 'unknown',
+                    'happened_at' => $event->created_at?->diffForHumans() ?? 'Onbekend',
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        $screenshotEventsLast24h = ChatSecurityEvent::query()
+            ->where('event_type', 'screenshot_attempt')
+            ->where('created_at', '>=', now()->subDay())
+            ->count();
+
         return Inertia::render('Admin/Index', [
             'users' => $users,
             'total_users' => count($users),
             'online_users' => $onlineCount,
+            'screenshot_events' => $screenshotEvents,
+            'screenshot_events_last_24h' => $screenshotEventsLast24h,
         ]);
     }
 

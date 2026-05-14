@@ -183,6 +183,28 @@ export default function Index({ chats, users, auth }: PageProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastScreenshotReportRef = useRef<number>(0);
+
+    const reportScreenshotAttempt = async (trigger: string) => {
+        if (!selectedChat) {
+            return;
+        }
+
+        const now = Date.now();
+        if (now - lastScreenshotReportRef.current < 10000) {
+            return;
+        }
+
+        lastScreenshotReportRef.current = now;
+
+        try {
+            await axios.post(`/api/chats/${selectedChat}/screenshot-attempt`, {
+                trigger,
+            });
+        } catch (error) {
+            console.error('Kon screenshot-poging niet loggen:', error);
+        }
+    };
 
     // Effects
     useEffect(() => {
@@ -219,6 +241,32 @@ export default function Index({ chats, users, auth }: PageProps) {
 
         return () => clearTimeout(timer);
     }, [mediaDeleteFeedback]);
+
+    useEffect(() => {
+        if (!selectedChat) {
+            return;
+        }
+
+        const handleScreenshotShortcut = (event: KeyboardEvent) => {
+            const key = event.key.toLowerCase();
+
+            if (event.key === 'PrintScreen') {
+                reportScreenshotAttempt('printscreen');
+                return;
+            }
+
+            const usesCaptureShortcut = (event.ctrlKey || event.metaKey) && event.shiftKey && (key === 's' || key === '3' || key === '4' || key === '5');
+            if (usesCaptureShortcut) {
+                reportScreenshotAttempt(`shortcut:${key}`);
+            }
+        };
+
+        window.addEventListener('keydown', handleScreenshotShortcut);
+
+        return () => {
+            window.removeEventListener('keydown', handleScreenshotShortcut);
+        };
+    }, [selectedChat]);
 
     // Close delete menu when clicking outside
     useEffect(() => {
