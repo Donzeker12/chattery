@@ -33,6 +33,7 @@ interface Props {
 
 export default function AdminIndex({ users: initialUsers, total_users, online_users, screenshot_events, screenshot_events_last_24h }: Props) {
     const [users, setUsers] = useState<User[]>(initialUsers);
+    const [activeTab, setActiveTab] = useState<'users' | 'security'>('users');
 
     const handleBan = async (userId: number) => {
         if (!confirm('Weet je zeker dat je deze gebruiker wilt bannen?')) {
@@ -152,42 +153,68 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                         </div>
                     </div>
 
-                    <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden mb-6">
-                        <div className="p-6">
-                            <h2 className="text-xl font-semibold text-white mb-1">Recente Screenshot Pogingen</h2>
-                            <p className="text-white/75 text-sm">Dit zijn gedetecteerde sneltoets-acties (geen 100% garantie op echte screenshots).</p>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-white/5 border-y border-white/20">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Gebruiker</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Gesprek</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Trigger</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Wanneer</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/10">
-                                    {screenshot_events.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={4} className="px-6 py-4 text-sm text-white/70">Nog geen screenshot-pogingen gelogd.</td>
-                                        </tr>
-                                    ) : (
-                                        screenshot_events.map((event) => (
-                                            <tr key={event.id} className="hover:bg-white/5 transition">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{event.user_name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-white/90">{event.chat_label}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-white/80">{event.trigger}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-white/80">{event.happened_at}</td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                    <div className="mb-6 flex flex-wrap gap-2">
+                        <button
+                            onClick={() => setActiveTab('users')}
+                            className={`px-4 py-2 rounded-lg transition ${
+                                activeTab === 'users'
+                                    ? 'bg-white text-purple-700 font-semibold'
+                                    : 'bg-white/15 hover:bg-white/25 text-white'
+                            }`}
+                        >
+                            Gebruikers
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('security')}
+                            className={`px-4 py-2 rounded-lg transition ${
+                                activeTab === 'security'
+                                    ? 'bg-white text-purple-700 font-semibold'
+                                    : 'bg-white/15 hover:bg-white/25 text-white'
+                            }`}
+                        >
+                            Security events
+                        </button>
                     </div>
 
+                    {activeTab === 'security' && (
+                        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden mb-6">
+                            <div className="p-6">
+                                <h2 className="text-xl font-semibold text-white mb-1">Recente Screenshot Pogingen</h2>
+                                <p className="text-white/75 text-sm">Dit zijn gedetecteerde sneltoets-acties (geen 100% garantie op echte screenshots).</p>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-white/5 border-y border-white/20">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Gebruiker</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Gesprek</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Trigger</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">Wanneer</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/10">
+                                        {screenshot_events.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="px-6 py-4 text-sm text-white/70">Nog geen screenshot-pogingen gelogd.</td>
+                                            </tr>
+                                        ) : (
+                                            screenshot_events.map((event) => (
+                                                <tr key={event.id} className="hover:bg-white/5 transition">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{event.user_name}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white/90">{event.chat_label}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white/80">{event.trigger}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white/80">{event.happened_at}</td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Users Table */}
+                    {activeTab === 'users' && (
                     <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden">
                         <div className="p-6">
                             <h2 className="text-xl font-semibold text-white mb-4">Gebruikers</h2>
@@ -313,6 +340,7 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                             </table>
                         </div>
                     </div>
+                    )}
                 </div>
             </div>
         </>
