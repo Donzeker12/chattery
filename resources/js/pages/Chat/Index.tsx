@@ -2064,7 +2064,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                         <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-auto sm:top-0 sm:left-auto sm:right-0 sm:h-full sm:w-80 flex flex-col bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-none shadow-2xl overflow-hidden animate-slide-in-right sm:border-l border-gray-200 dark:border-gray-800">
 
                             {/* Hero / cover */}
-                            <div className="relative h-40 sm:h-72 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shrink-0 overflow-visible">
+                            <div className="relative z-0 h-40 sm:h-72 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shrink-0 overflow-visible">
                                 {profileUser.profile_photo_url && (
                                     <img
                                         src={profileUser.profile_photo_url}
@@ -2095,7 +2095,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                             {/* Scrollable body */}
                             <div className="overflow-y-auto flex-1 overflow-x-hidden">
                                 {/* Avatar overlapping hero */}
-                                <div className="flex flex-col items-center -mt-16 px-6 pb-2">
+                                <div className="relative z-10 flex flex-col items-center -mt-16 px-6 pb-2">
                                     <div
                                         className={`relative cursor-pointer rounded-full ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 ${profileUser.is_online ? 'ring-green-400' : 'ring-gray-300 dark:ring-gray-600'}`}
                                         onClick={() => profileUser.profile_photo_url && setFullscreenImage(profileUser.profile_photo_url)}
