@@ -688,8 +688,8 @@ export default function Index({ chats, users, auth }: PageProps) {
         if (!chatToDelete) return;
         
         try {
-            await axios.post(`/chat/${chatToDelete.id}/hide`);
-            setChatsList(chatsList.filter(chat => chat.id !== chatToDelete.id));
+            await axios.delete(`/chat/${chatToDelete.id}`);
+            setChatsList(prev => prev.filter(chat => chat.id !== chatToDelete.id));
             
             if (selectedChat === chatToDelete.id) {
                 setSelectedChat(null);
@@ -697,6 +697,26 @@ export default function Index({ chats, users, auth }: PageProps) {
                 setMessages([]);
             }
             
+            setShowDeleteModal(false);
+            setChatToDelete(null);
+        } catch (error) {
+            console.error('Error hiding chat:', error);
+        }
+    };
+
+    const handleHideChat = async () => {
+        if (!chatToDelete) return;
+
+        try {
+            await axios.post(`/chat/${chatToDelete.id}/hide`);
+            setChatsList(prev => prev.filter(chat => chat.id !== chatToDelete.id));
+
+            if (selectedChat === chatToDelete.id) {
+                setSelectedChat(null);
+                setCurrentParticipant(null);
+                setMessages([]);
+            }
+
             setShowDeleteModal(false);
             setChatToDelete(null);
         } catch (error) {
@@ -1729,7 +1749,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                     </div>
                 )}
 
-                {/* Delete Modal */}
+                {/* Chat Action Modal */}
                 {showDeleteModal && chatToDelete && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
@@ -1741,14 +1761,29 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         </svg>
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-gray-900">Gesprek verbergen</h3>
+                                        <h3 className="text-lg font-bold text-gray-900">Gespreksopties</h3>
                                         <p className="text-sm text-gray-600 mt-1">
-                                            Weet je zeker dat je dit gesprek wilt verbergen? Het gesprek verdwijnt alleen voor jou. De andere persoon kan het gesprek nog steeds zien.
+                                            Kies wat je wilt doen: verbergen (alleen voor jou) of volledig verwijderen (definitief voor iedereen).
                                         </p>
                                     </div>
                                 </div>
                                 
-                                <div className="flex gap-3 mt-6">
+                                <div className="space-y-2 mt-6">
+                                    <button
+                                        onClick={handleHideChat}
+                                        className="w-full px-4 py-2 bg-amber-500 text-white rounded-lg font-semibold hover:bg-amber-600 transition"
+                                    >
+                                        Verbergen (alleen voor mij)
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteChat}
+                                        className="w-full px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
+                                    >
+                                        Volledig verwijderen
+                                    </button>
+                                </div>
+
+                                <div className="flex gap-3 mt-3">
                                     <button
                                         onClick={() => {
                                             setShowDeleteModal(false);
@@ -1757,12 +1792,6 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition"
                                     >
                                         Annuleren
-                                    </button>
-                                    <button
-                                        onClick={handleDeleteChat}
-                                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
-                                    >
-                                        Verbergen
                                     </button>
                                 </div>
                             </div>
@@ -1981,7 +2010,11 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         <div className="space-y-2">
                                             <button
                                                 onClick={() => {
-                                                    setChatToDelete(selectedChat);
+                                                    const currentChat = chatsList.find(chat => chat.id === selectedChat) || null;
+                                                    if (!currentChat) {
+                                                        return;
+                                                    }
+                                                    setChatToDelete(currentChat);
                                                     setShowDeleteModal(true);
                                                     setShowProfileModal(false);
                                                     setProfileUser(null);
@@ -1991,7 +2024,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
-                                                Chat verbergen
+                                                Chat opties
                                             </button>
                                             
                                             <button

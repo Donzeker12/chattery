@@ -11,6 +11,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -622,44 +624,27 @@ class ChatController extends Controller
             abort(403);
         }
 
-        // Add user to hidden_for_users array for the chat
-        $hiddenForUsers = $chat->hidden_for_users ?? [];
-        
-        if (!in_array($user->id, $hiddenForUsers)) {
-            $hiddenForUsers[] = $user->id;
-            $chat->hidden_for_users = $hiddenForUsers;
-            $chat->save();
-        }
+        $attachmentPaths = $chat->messages()
+            ->whereNotNull('attachment_path')
+            ->pluck('attachment_path')
+            ->filter()
+            ->unique()
+            ->values();
 
-        // Hide all messages in this chat for this user
-        foreach ($chat->messages as $message) {
-            $messageHiddenForUsers = $message->hidden_for_users ?? [];
-            if (!in_array($user->id, $messageHiddenForUsers)) {
-                $messageHiddenForUsers[] = $user->id;
-                $message->hidden_for_users = $messageHiddenForUsers;
-                $message->save();
-            }
-        }
-
-        // If both users have hidden the chat, permanently delete it
-        $bothUsersHidden = in_array($chat->user_one_id, $hiddenForUsers) && 
-                          in_array($chat->user_two_id, $hiddenForUsers);
-        
-        if ($bothUsersHidden) {
-            // Delete all messages and reactions using query builder (more efficient)
-            // This cascades properly due to foreign key constraints
+        DB::transaction(function () use ($chat) {
             $chat->messages()->delete();
             $chat->delete();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Gesprek permanent verwijderd',
-            ]);
+        });
+
+        foreach ($attachmentPaths as $path) {
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Gesprek verborgen',
+            'message' => 'Gesprek volledig verwijderd',
         ]);
     }
 

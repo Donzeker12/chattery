@@ -37,6 +37,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/chats', [ChatController::class, 'index']);
     Route::get('/chats/hidden', [ChatController::class, 'getHiddenChats']);
     Route::post('/chats/start', [ChatController::class, 'startChat']);
+    Route::delete('/chats/{chat}', [ChatController::class, 'deleteChat']);
     Route::post('/chats/{chat}/hide', [ChatController::class, 'hideChat']);
     Route::post('/chats/{chat}/unhide', [ChatController::class, 'unhideChat']);
     

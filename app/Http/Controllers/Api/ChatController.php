@@ -13,6 +13,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
@@ -422,6 +423,41 @@ class ChatController extends Controller
         }
 
         return response()->json(['chat_id' => $chat->id]);
+    }
+
+    /**
+     * Permanently delete a full conversation including messages and media.
+     */
+    public function deleteChat(Chat $chat)
+    {
+        $user = Auth::user();
+
+        if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
+            return response()->json(['error' => 'Niet geautoriseerd'], 403);
+        }
+
+        $attachmentPaths = $chat->messages()
+            ->whereNotNull('attachment_path')
+            ->pluck('attachment_path')
+            ->filter()
+            ->unique()
+            ->values();
+
+        DB::transaction(function () use ($chat) {
+            $chat->messages()->delete();
+            $chat->delete();
+        });
+
+        foreach ($attachmentPaths as $path) {
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Gesprek volledig verwijderd',
+        ]);
     }
 
     /**
