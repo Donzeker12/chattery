@@ -2080,14 +2080,10 @@ export default function Index({ chats, users, auth }: PageProps) {
                             {/* Avatar - overlapping hero */}
                             <div className="flex flex-col items-center -mt-14 px-6 pb-2">
                                 <div
-                                    className="relative cursor-pointer"
+                                    className={`relative cursor-pointer rounded-full ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 ${profileUser.is_online ? 'ring-green-400' : 'ring-gray-300 dark:ring-gray-600'}`}
                                     onClick={() => profileUser.profile_photo_url && setFullscreenImage(profileUser.profile_photo_url)}
                                 >
-                                    <div className={`p-1 rounded-full ${profileUser.is_online ? 'bg-green-400' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                                        <div className="bg-white dark:bg-gray-900 p-0.5 rounded-full">
-                                            <Avatar photoUrl={profileUser.profile_photo_url} name={profileUser.name} size="xl" />
-                                        </div>
-                                    </div>
+                                    <Avatar photoUrl={profileUser.profile_photo_url} name={profileUser.name} size="xl" />
                                     {profileUser.profile_photo_url && (
                                         <div className="absolute inset-0 rounded-full flex items-center justify-center bg-black/0 hover:bg-black/20 transition">
                                             <svg className="w-6 h-6 text-white opacity-0 hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
