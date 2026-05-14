@@ -905,7 +905,7 @@ export default function Index({ chats, users, auth }: PageProps) {
 
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 <button
-                                    onClick={() => setShowSettingsModal(true)}
+                                    onClick={() => router.visit('/settings')}
                                     className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-all duration-200 hover:scale-105 shadow-lg"
                                     title="Instellingen"
                                 >
