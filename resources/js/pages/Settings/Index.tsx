@@ -286,10 +286,12 @@ const ProfielContent: React.FC<ProfielContentProps> = ({ user, onPhotoUpdate }) 
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Profielfoto</h2>
             
             <div className="space-y-6">
-                <ProfilePhotoUpload
-                    currentPhotoUrl={user.profile_photo_url}
-                    onPhotoUpdate={onPhotoUpdate}
-                />
+                <div className="flex justify-center md:justify-start">
+                    <ProfilePhotoUpload
+                        currentPhotoUrl={user.profile_photo_url}
+                        onPhotoUpdate={onPhotoUpdate}
+                    />
+                </div>
                 
                 <div className="text-center border-t pt-6">
                     <h3 className="text-xl font-semibold text-gray-800">{user.name}</h3>

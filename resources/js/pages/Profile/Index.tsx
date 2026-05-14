@@ -181,10 +181,12 @@ export default function Profile() {
                             </h2>
                             
                             <div className="space-y-6">
-                                <ProfilePhotoUpload
-                                    currentPhotoUrl={user.profile_photo_url}
-                                    onPhotoUpdate={handlePhotoUpdate}
-                                />
+                                <div className="flex justify-center md:justify-start">
+                                    <ProfilePhotoUpload
+                                        currentPhotoUrl={user.profile_photo_url}
+                                        onPhotoUpdate={handlePhotoUpdate}
+                                    />
+                                </div>
                                 
                                 <div className="text-center">
                                     <h3 className="text-xl font-semibold text-gray-800">{user.name}</h3>

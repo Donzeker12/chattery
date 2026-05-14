@@ -135,7 +135,7 @@ export default function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate }: P
     }, [showMenu]);
 
     return (
-        <div className="relative">
+        <div className="relative w-full">
             <input
                 ref={fileInputRef}
                 type="file"
@@ -144,11 +144,11 @@ export default function ProfilePhotoUpload({ currentPhotoUrl, onPhotoUpdate }: P
                 className="hidden"
             />
 
-            <div className="relative group">
+            <div className="relative group flex justify-center md:justify-start">
                 <button
                     onClick={handleAvatarClick}
                     disabled={isUploading}
-                    className="w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-bold cursor-pointer transition-all border-4 border-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed relative bg-gradient-to-br from-indigo-600 to-purple-600 overflow-hidden hover:brightness-75"
+                    className="w-32 h-32 md:w-24 md:h-24 rounded-full flex items-center justify-center text-white text-4xl md:text-3xl font-bold cursor-pointer transition-all border-4 border-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed relative bg-gradient-to-br from-indigo-600 to-purple-600 overflow-hidden hover:brightness-75"
                 >
                     {photoUrl ? (
                         <img 
