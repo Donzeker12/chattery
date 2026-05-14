@@ -697,6 +697,29 @@ export default function Index({ chats, users, auth }: PageProps) {
         }
     };
 
+    const deleteMediaItem = async (messageId: number, deleteForEveryone: boolean) => {
+        const confirmText = deleteForEveryone
+            ? 'Weet je zeker dat je deze media voor iedereen wilt verwijderen?'
+            : 'Weet je zeker dat je deze media voor jezelf wilt verwijderen?';
+
+        if (!confirm(confirmText)) return;
+
+        try {
+            if (deleteForEveryone) {
+                await axios.delete(`/api/messages/${messageId}/delete-for-everyone`);
+            } else {
+                await axios.delete(`/api/messages/${messageId}/delete-for-me`);
+            }
+
+            setMediaItems(prev => prev.filter(item => item.id !== messageId));
+            await refreshMessages();
+            await refreshChatList();
+        } catch (error) {
+            console.error('Error deleting media item:', error);
+            alert('Er is een fout opgetreden bij het verwijderen van de media.');
+        }
+    };
+
     const fetchMediaGallery = async () => {
         if (!selectedChat) return;
 
@@ -2292,6 +2315,35 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                         }
                                                     }}
                                                 >
+                                                    <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                deleteMediaItem(item.id, false);
+                                                            }}
+                                                            className="p-1.5 bg-black/60 text-white rounded-md hover:bg-black/80 transition"
+                                                            title="Verwijder voor mezelf"
+                                                        >
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                        </button>
+                                                        {item.user.id === auth.user.id && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    deleteMediaItem(item.id, true);
+                                                                }}
+                                                                className="p-1.5 bg-red-600/85 text-white rounded-md hover:bg-red-700 transition"
+                                                                title="Verwijder voor iedereen"
+                                                            >
+                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                </svg>
+                                                            </button>
+                                                        )}
+                                                    </div>
+
                                                     {item.type === 'image' ? (
                                                         <img
                                                             src={item.url}
