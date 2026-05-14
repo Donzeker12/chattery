@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->json('hidden_chat_ids')->default('[]')->after('is_hidden');
+            $table->json('hidden_chat_ids')->nullable()->after('is_hidden');
         });
     }
 
