@@ -1946,10 +1946,9 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                         key={theme.id}
                                                         onClick={() => {
                                                             setChatColors({ primary: theme.colors[0], secondary: theme.colors[1], background: 'gradient' });
-                                                            setChatTheme(theme.id);
                                                         }}
                                                         className={`p-3 rounded-lg border-2 transition-all ${
-                                                            chatTheme === theme.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                                                            chatColors.primary === theme.colors[0] ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                                                         }`}
                                                     >
                                                         <div className="flex items-center gap-2 mb-2">
