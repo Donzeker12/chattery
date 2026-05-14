@@ -742,35 +742,15 @@ export default function Index({ chats, users, auth }: PageProps) {
 
     // Get background theme classes based on chatTheme
     const getBackgroundTheme = () => {
-        const themes: Record<string, { light: string; dark: string }> = {
-            default: {
-                light: 'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50',
-                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
-            },
-            dark: {
-                light: 'bg-gradient-to-br from-gray-800 via-gray-900 to-black',
-                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
-            },
-            nature: {
-                light: 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50',
-                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
-            },
-            sunset: {
-                light: 'bg-gradient-to-br from-orange-50 via-red-50 to-pink-50',
-                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
-            },
-            ocean: {
-                light: 'bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50',
-                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
-            },
-            lavender: {
-                light: 'bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-50',
-                dark: 'dark:from-gray-900 dark:via-gray-800 dark:to-black'
-            }
+        const themes: Record<string, string> = {
+            default: 'bg-gradient-to-br from-blue-200 via-purple-200 to-pink-200',
+            dark:    'bg-gradient-to-br from-gray-800 via-gray-900 to-black',
+            nature:  'bg-gradient-to-br from-green-200 via-emerald-200 to-teal-200',
+            sunset:  'bg-gradient-to-br from-orange-200 via-red-200 to-pink-200',
+            ocean:   'bg-gradient-to-br from-blue-200 via-cyan-200 to-teal-200',
+            lavender:'bg-gradient-to-br from-purple-200 via-violet-200 to-indigo-200',
         };
-
-        const theme = themes[chatTheme] || themes.default;
-        return `${theme.light} ${theme.dark}`;
+        return themes[chatTheme] || themes.default;
     };
 
     return (
@@ -1396,7 +1376,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                             </div>
                         </>
                     ) : (
-                        <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                        <div className="flex-1 flex items-center justify-center bg-transparent">
                             <div className="text-center max-w-md mx-auto p-8">
                                 <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center">
                                     <svg 
@@ -1980,12 +1960,12 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     <div className="bg-gray-50 rounded-xl p-4">
                                         <div className="grid grid-cols-3 gap-3">
                                             {[
-                                                { name: 'Standaard', preview: 'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50', id: 'default' },
+                                                { name: 'Standaard', preview: 'bg-gradient-to-br from-blue-200 via-purple-200 to-pink-200', id: 'default' },
                                                 { name: 'Donker', preview: 'bg-gradient-to-br from-gray-800 via-gray-900 to-black', id: 'dark' },
-                                                { name: 'Natuur', preview: 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50', id: 'nature' },
-                                                { name: 'Zonsondergang', preview: 'bg-gradient-to-br from-orange-50 via-red-50 to-pink-50', id: 'sunset' },
-                                                { name: 'Oceaan', preview: 'bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50', id: 'ocean' },
-                                                { name: 'Lavendel', preview: 'bg-gradient-to-br from-purple-50 via-violet-50 to-indigo-50', id: 'lavender' }
+                                                { name: 'Natuur', preview: 'bg-gradient-to-br from-green-200 via-emerald-200 to-teal-200', id: 'nature' },
+                                                { name: 'Zonsondergang', preview: 'bg-gradient-to-br from-orange-200 via-red-200 to-pink-200', id: 'sunset' },
+                                                { name: 'Oceaan', preview: 'bg-gradient-to-br from-blue-200 via-cyan-200 to-teal-200', id: 'ocean' },
+                                                { name: 'Lavendel', preview: 'bg-gradient-to-br from-purple-200 via-violet-200 to-indigo-200', id: 'lavender' }
                                             ].map((theme) => (
                                                 <button
                                                     key={theme.id}
