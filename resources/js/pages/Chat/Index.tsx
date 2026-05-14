@@ -2061,7 +2061,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                         />
 
                         {/* Panel: bottom-sheet on mobile, right-side drawer on desktop */}
-                        <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-auto sm:top-0 sm:left-auto sm:right-0 sm:h-full sm:w-80 flex flex-col bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-none shadow-2xl overflow-hidden animate-slide-in-right sm:border-l border-gray-200 dark:border-gray-800">
+                        <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-auto sm:top-0 sm:left-auto sm:right-0 sm:h-full sm:w-80 flex flex-col bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-none shadow-2xl overflow-visible animate-slide-in-right sm:border-l border-gray-200 dark:border-gray-800">
 
                             {/* Hero / cover */}
                             <div className="relative z-0 h-56 sm:h-72 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shrink-0 overflow-visible">
