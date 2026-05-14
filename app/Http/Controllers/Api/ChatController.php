@@ -23,11 +23,15 @@ class ChatController extends Controller
     {
         $user = Auth::user();
         $onlineThreshold = now()->subMinutes(5);
+        $hiddenChatIds = $user->hidden_chat_ids ?? [];
         
         $chats = Chat::where('user_one_id', $user->id)
             ->orWhere('user_two_id', $user->id)
             ->with(['userOne', 'userTwo', 'latestMessage'])
             ->get()
+            ->filter(function ($chat) use ($hiddenChatIds) {
+                return !in_array($chat->id, $hiddenChatIds);
+            })
             ->map(function ($chat) use ($user, $onlineThreshold) {
                 $otherUser = $chat->otherParticipant($user->id);
                 $isOnline = $otherUser->last_seen_at && $otherUser->last_seen_at >= $onlineThreshold;
