@@ -2092,23 +2092,27 @@ export default function Index({ chats, users, auth }: PageProps) {
                                 </button>
                             </div>
 
+                            {/* Avatar positioned absolutely to avoid clipping */}
+                            <div className="absolute z-10 left-1/2 -translate-x-1/2 top-40 sm:top-52">
+                                <div
+                                    className={`relative cursor-pointer rounded-full ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 ${profileUser.is_online ? 'ring-green-400' : 'ring-gray-300 dark:ring-gray-600'}`}
+                                    onClick={() => profileUser.profile_photo_url && setFullscreenImage(profileUser.profile_photo_url)}
+                                >
+                                    <Avatar photoUrl={profileUser.profile_photo_url} name={profileUser.name} size="xl" />
+                                    {profileUser.profile_photo_url && (
+                                        <div className="absolute inset-0 rounded-full flex items-center justify-center bg-black/0 hover:bg-black/20 transition">
+                                            <svg className="w-5 h-5 text-white opacity-0 hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Scrollable body */}
                             <div className="overflow-y-auto flex-1 overflow-x-hidden">
-                                {/* Avatar overlapping hero */}
-                                <div className="relative z-10 flex flex-col items-center -mt-20 sm:-mt-16 px-6 pb-2">
-                                    <div
-                                        className={`relative cursor-pointer rounded-full ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 ${profileUser.is_online ? 'ring-green-400' : 'ring-gray-300 dark:ring-gray-600'}`}
-                                        onClick={() => profileUser.profile_photo_url && setFullscreenImage(profileUser.profile_photo_url)}
-                                    >
-                                        <Avatar photoUrl={profileUser.profile_photo_url} name={profileUser.name} size="xl" />
-                                        {profileUser.profile_photo_url && (
-                                            <div className="absolute inset-0 rounded-full flex items-center justify-center bg-black/0 hover:bg-black/20 transition">
-                                                <svg className="w-5 h-5 text-white opacity-0 hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                                </svg>
-                                            </div>
-                                        )}
-                                    </div>
+                                {/* Avatar info section */}
+                                <div className="flex flex-col items-center pt-16 px-6 pb-2">
                                     <h2 className="mt-3 text-xl font-bold text-gray-900 dark:text-white">{profileUser.name}</h2>
                                     <span className={`mt-1 text-sm font-medium px-3 py-0.5 rounded-full ${
                                         profileUser.is_online
