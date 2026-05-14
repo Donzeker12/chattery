@@ -229,7 +229,12 @@ class ChatController extends Controller
             // Filter out messages deleted or hidden for this user
             $deletedForUsers = $message->deleted_for_users ?? [];
             $hiddenForUsers = $message->hidden_for_users ?? [];
-            
+
+            // Never show view_once messages in gallery
+            if ($message->view_once) {
+                return false;
+            }
+
             return !in_array($user->id, $deletedForUsers) && !in_array($user->id, $hiddenForUsers);
         })->map(function ($message) {
             return [
