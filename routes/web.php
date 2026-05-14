@@ -36,10 +36,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat', [ChatController::class, 'index'])->name('chat');
     Route::get('/chat/list', [ChatController::class, 'getChatList'])->name('chat.list');
     Route::get('/chat/search-users', [ChatController::class, 'searchUsers'])->name('chat.search-users');
+    Route::get('/chat/hidden', [ChatController::class, 'getHiddenChats'])->name('chat.hidden');
     Route::get('/chat/{chat}', [ChatController::class, 'show'])->name('chat.show');
     Route::get('/chat/{chat}/media', [ChatController::class, 'getMedia'])->name('chat.media');
     Route::post('/chat/{chat}/message', [ChatController::class, 'sendMessage'])->name('chat.message');
     Route::post('/chat/start', [ChatController::class, 'startChat'])->name('chat.start');
+    Route::post('/chat/{chat}/hide', [ChatController::class, 'hideChat'])->name('chat.hide');
+    Route::post('/chat/{chat}/unhide', [ChatController::class, 'unhideChat'])->name('chat.unhide');
     Route::delete('/chat/{chat}', [ChatController::class, 'deleteChat'])->name('chat.delete');
     
     // Typing indicator

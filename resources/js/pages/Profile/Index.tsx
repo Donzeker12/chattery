@@ -1,5 +1,7 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { FormEvent, useState, useEffect } from 'react';
+import axios from '@/lib/axios';
+import Avatar from '@/components/Avatar';
 import ProfilePhotoUpload from '@/components/ProfilePhotoUpload';
 
 // Success Modal Component
@@ -57,6 +59,8 @@ export default function Profile() {
     const [isLoading, setIsLoading] = useState(true);
     const [showPasswordForm, setShowPasswordForm] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [hiddenChats, setHiddenChats] = useState<any[]>([]);
+    const [loadingHiddenChats, setLoadingHiddenChats] = useState(false);
     
     const { data, setData, post, processing, errors, reset } = useForm({
         current_password: '',
@@ -70,7 +74,30 @@ export default function Profile() {
         console.log('User:', user);
         console.log('Flash data:', flash);
         setIsLoading(false);
+        loadHiddenChats();
     }, []);
+
+    const loadHiddenChats = async () => {
+        setLoadingHiddenChats(true);
+        try {
+            const response = await axios.get('/chat/hidden');
+            setHiddenChats(response.data.hidden_chats || []);
+        } catch (error) {
+            console.error('Error loading hidden chats:', error);
+        } finally {
+            setLoadingHiddenChats(false);
+        }
+    };
+
+    const unhideChat = async (chatId: number) => {
+        try {
+            await axios.post(`/chat/${chatId}/unhide`);
+            setHiddenChats(hiddenChats.filter(chat => chat.id !== chatId));
+        } catch (error) {
+            console.error('Error unhiding chat:', error);
+            alert('Fout bij het zichtbaar maken van de chat');
+        }
+    };
 
     // Handle flash messages
     useEffect(() => {
@@ -312,6 +339,57 @@ export default function Profile() {
                                 </ul>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Hidden Chats Section */}
+                    <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                            <svg className="w-6 h-6 mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 17M9.878 9.878l-3-3m12.121 12.121L21 21" />
+                            </svg>
+                            Verborgen Gesprekken
+                        </h2>
+                        
+                        {loadingHiddenChats ? (
+                            <div className="flex justify-center py-8">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+                            </div>
+                        ) : hiddenChats.length > 0 ? (
+                            <div className="space-y-3">
+                                {hiddenChats.map((chat) => (
+                                    <div key={chat.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div className="flex items-center gap-4 flex-1">
+                                            <Avatar
+                                                photoUrl={chat.participant.profile_photo_url}
+                                                name={chat.participant.name}
+                                                size="sm"
+                                            />
+                                            <div className="flex-1">
+                                                <h3 className="font-semibold text-gray-900">{chat.participant.name}</h3>
+                                                <p className="text-sm text-gray-600">
+                                                    {chat.latest_message 
+                                                        ? (chat.latest_message.message || 'Bericht') 
+                                                        : 'Geen berichten'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => unhideChat(chat.id)}
+                                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                        >
+                                            Zichtbaar Maken
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <svg className="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <p className="text-gray-500">Je hebt geen verborgen gesprekken</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Download App Section */}

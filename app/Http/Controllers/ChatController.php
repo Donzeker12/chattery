@@ -25,12 +25,17 @@ class ChatController extends Controller
         $onlineThreshold = now()->subMinutes(5);
         
         // Get all chats for the authenticated user with latest message
+        $hiddenChatIds = $user->hidden_chat_ids ?? [];
         $chats = Chat::where('user_one_id', $user->id)
             ->orWhere('user_two_id', $user->id)
             ->with(['userOne', 'userTwo', 'latestMessage'])
             ->get()
-            ->filter(function ($chat) use ($user) {
-                // Filter out chats hidden by this user
+            ->filter(function ($chat) use ($user, $hiddenChatIds) {
+                // Filter out chats hidden by this user (from hidden_chat_ids)
+                if (in_array($chat->id, $hiddenChatIds)) {
+                    return false;
+                }
+                // Also filter out chats hidden via hidden_for_users (legacy)
                 $hiddenForUsers = $chat->hidden_for_users ?? [];
                 return !in_array($user->id, $hiddenForUsers);
             })
@@ -818,5 +823,93 @@ class ChatController extends Controller
         return response()->json([
             'is_typing' => $isTyping,
         ]);
+    }
+
+    public function hideChat(Chat $chat)
+    {
+        $user = Auth::user();
+
+        // Verify user is part of this chat
+        if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        // Add chat to hidden_chat_ids
+        $hiddenChatIds = $user->hidden_chat_ids ?? [];
+        if (!in_array($chat->id, $hiddenChatIds)) {
+            $hiddenChatIds[] = $chat->id;
+            $user->hidden_chat_ids = $hiddenChatIds;
+            $user->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Chat is verborgen'
+        ]);
+    }
+
+    public function unhideChat(Chat $chat)
+    {
+        $user = Auth::user();
+
+        // Verify user is part of this chat
+        if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
+            abort(403);
+        }
+
+        // Remove chat from hidden_chat_ids
+        $hiddenChatIds = $user->hidden_chat_ids ?? [];
+        $hiddenChatIds = array_filter($hiddenChatIds, function ($id) use ($chat) {
+            return $id !== $chat->id;
+        });
+        $user->hidden_chat_ids = array_values($hiddenChatIds);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Chat is zichtbaar gemaakt'
+        ]);
+    }
+
+    public function getHiddenChats()
+    {
+        $user = Auth::user();
+        $onlineThreshold = now()->subMinutes(5);
+        
+        $hiddenChatIds = $user->hidden_chat_ids ?? [];
+        
+        if (empty($hiddenChatIds)) {
+            return response()->json(['hidden_chats' => []]);
+        }
+
+        $hiddenChats = Chat::whereIn('id', $hiddenChatIds)
+            ->where(function ($q) use ($user) {
+                $q->where('user_one_id', $user->id)
+                  ->orWhere('user_two_id', $user->id);
+            })
+            ->with(['userOne', 'userTwo', 'latestMessage'])
+            ->get()
+            ->map(function ($chat) use ($user, $onlineThreshold) {
+                $otherUser = $chat->otherParticipant($user->id);
+                $isOnline = $otherUser->last_seen_at && $otherUser->last_seen_at >= $onlineThreshold;
+                
+                return [
+                    'id' => $chat->id,
+                    'participant' => [
+                        'id' => $otherUser->id,
+                        'name' => $otherUser->name,
+                        'is_online' => $isOnline,
+                        'profile_photo_url' => $otherUser->profile_photo_path ? asset('storage/' . $otherUser->profile_photo_path) : null,
+                    ],
+                    'latest_message' => $chat->latestMessage ? [
+                        'message' => $chat->latestMessage->message,
+                        'created_at' => $chat->latestMessage->created_at,
+                        'is_mine' => $chat->latestMessage->user_id === $user->id,
+                    ] : null,
+                ];
+            })
+            ->toArray();
+
+        return response()->json(['hidden_chats' => $hiddenChats]);
     }
 }

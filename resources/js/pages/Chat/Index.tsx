@@ -579,7 +579,7 @@ export default function Index({ chats, users, auth }: PageProps) {
         if (!chatToDelete) return;
         
         try {
-            await axios.delete(`/api/chats/${chatToDelete.id}`);
+            await axios.post(`/chat/${chatToDelete.id}/hide`);
             setChatsList(chatsList.filter(chat => chat.id !== chatToDelete.id));
             
             if (selectedChat === chatToDelete.id) {
@@ -591,7 +591,7 @@ export default function Index({ chats, users, auth }: PageProps) {
             setShowDeleteModal(false);
             setChatToDelete(null);
         } catch (error) {
-            console.error('Error deleting chat:', error);
+            console.error('Error hiding chat:', error);
         }
     };
 
