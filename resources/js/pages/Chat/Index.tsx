@@ -2048,14 +2048,168 @@ export default function Index({ chats, users, auth }: PageProps) {
 
                 {/* Profile Modal */}
                 {showProfileModal && profileUser && (
-                    <div
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50"
-                        onClick={() => { setShowProfileModal(false); setProfileUser(null); }}
-                    >
+                    <>
+                        {/* Backdrop - only on mobile */}
                         <div
-                            className="bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
-                            onClick={e => e.stopPropagation()}
-                        >
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 sm:hidden"
+                            onClick={() => { setShowProfileModal(false); setProfileUser(null); }}
+                        />
+                        {/* Semi-transparent overlay for desktop (clickable to close) */}
+                        <div
+                            className="fixed inset-0 z-40 hidden sm:block"
+                            onClick={() => { setShowProfileModal(false); setProfileUser(null); }}
+                        />
+
+                        {/* Panel: bottom-sheet on mobile, right-side drawer on desktop */}
+                        <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-auto sm:top-0 sm:left-auto sm:right-0 sm:h-full sm:w-80 flex flex-col bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-none shadow-2xl overflow-hidden animate-slide-in-right sm:border-l border-gray-200 dark:border-gray-800">
+
+                            {/* Hero / cover */}
+                            <div className="relative h-40 sm:h-52 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shrink-0 overflow-hidden">
+                                {profileUser.profile_photo_url && (
+                                    <img
+                                        src={profileUser.profile_photo_url}
+                                        className="absolute inset-0 w-full h-full object-cover opacity-40 blur-2xl scale-110"
+                                        alt=""
+                                    />
+                                )}
+                                {/* Close button */}
+                                <button
+                                    onClick={() => { setShowProfileModal(false); setProfileUser(null); }}
+                                    className="absolute top-3 right-3 w-8 h-8 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center transition"
+                                >
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                                {/* Desktop: back chevron on left */}
+                                <button
+                                    onClick={() => { setShowProfileModal(false); setProfileUser(null); }}
+                                    className="absolute top-3 left-3 w-8 h-8 bg-black/30 hover:bg-black/50 rounded-full items-center justify-center transition hidden sm:flex"
+                                >
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Scrollable body */}
+                            <div className="overflow-y-auto flex-1">
+                                {/* Avatar overlapping hero */}
+                                <div className="flex flex-col items-center -mt-12 px-6 pb-2">
+                                    <div
+                                        className={`relative cursor-pointer rounded-full ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 ${profileUser.is_online ? 'ring-green-400' : 'ring-gray-300 dark:ring-gray-600'}`}
+                                        onClick={() => profileUser.profile_photo_url && setFullscreenImage(profileUser.profile_photo_url)}
+                                    >
+                                        <Avatar photoUrl={profileUser.profile_photo_url} name={profileUser.name} size="xl" />
+                                        {profileUser.profile_photo_url && (
+                                            <div className="absolute inset-0 rounded-full flex items-center justify-center bg-black/0 hover:bg-black/20 transition">
+                                                <svg className="w-5 h-5 text-white opacity-0 hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <h2 className="mt-3 text-xl font-bold text-gray-900 dark:text-white">{profileUser.name}</h2>
+                                    <span className={`mt-1 text-sm font-medium px-3 py-0.5 rounded-full ${
+                                        profileUser.is_online
+                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                                            : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                                    }`}>
+                                        {profileUser.is_online ? '● Online' : '○ Offline'}
+                                    </span>
+                                </div>
+
+                                {/* Info card */}
+                                <div className="px-5 pt-3 pb-2">
+                                    <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-3 flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
+                                            <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-gray-400 dark:text-gray-500">Lid sinds</p>
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                                {profileUser.created_at
+                                                    ? new Date(profileUser.created_at).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' })
+                                                    : 'Onbekend'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="px-5 pt-1 pb-8 space-y-2">
+                                    {profileUser.id !== auth.user.id ? (
+                                        <>
+                                            <button
+                                                onClick={() => {
+                                                    const currentChat = chatsList.find(chat => chat.id === selectedChat) || null;
+                                                    if (!currentChat) return;
+                                                    setChatToDelete(currentChat);
+                                                    setShowDeleteModal(true);
+                                                    setShowProfileModal(false);
+                                                    setProfileUser(null);
+                                                }}
+                                                className="w-full flex items-center gap-3 p-3 rounded-2xl bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition group"
+                                            >
+                                                <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                                    <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-sm font-semibold text-red-700 dark:text-red-400">Chat opties</p>
+                                                    <p className="text-xs text-red-400 dark:text-red-500">Verbergen of verwijderen</p>
+                                                </div>
+                                                <svg className="w-4 h-4 text-red-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </button>
+
+                                            <button
+                                                onClick={() => { alert('Meldingsopties worden binnenkort toegevoegd'); setShowProfileModal(false); setProfileUser(null); }}
+                                                className="w-full flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition group"
+                                            >
+                                                <div className="w-9 h-9 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                                    </svg>
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Meldingen</p>
+                                                    <p className="text-xs text-gray-400">Beheer meldingen</p>
+                                                </div>
+                                                <svg className="w-4 h-4 text-gray-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button
+                                            onClick={() => router.post('/logout')}
+                                            className="w-full flex items-center gap-3 p-3 rounded-2xl bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition group"
+                                        >
+                                            <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                                <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                                </svg>
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-sm font-semibold text-red-700 dark:text-red-400">Uitloggen</p>
+                                                <p className="text-xs text-red-400 dark:text-red-500">Sessie beëindigen</p>
+                                            </div>
+                                            <svg className="w-4 h-4 text-red-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+
                             {/* Hero / cover */}
                             <div className="relative h-36 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 overflow-hidden">
                                 {/* Blurred avatar as background */}

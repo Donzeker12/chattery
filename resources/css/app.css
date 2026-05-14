@@ -35,3 +35,33 @@
 .animate-fade-in {
     animation: fade-in 0.3s ease-out;
 }
+
+/* Profile panel slide-in from right (desktop) */
+@keyframes slide-in-from-right {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* Profile panel slide-in from bottom (mobile) */
+@keyframes slide-in-from-bottom {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+.animate-slide-in-right {
+    animation: slide-in-from-bottom 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (min-width: 640px) {
+    .animate-slide-in-right {
+        animation: slide-in-from-right 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+}
