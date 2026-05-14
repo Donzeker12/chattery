@@ -185,6 +185,7 @@ export default function Index({ chats, users, auth }: PageProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const isLoadingOlderRef = useRef(false);
+    const messagesRef = useRef<Message[]>([]);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastScreenshotReportRef = useRef<number>(0);
 
@@ -317,6 +318,11 @@ export default function Index({ chats, users, auth }: PageProps) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
         setIsAtBottom(true);
     };
+
+    // Keep messagesRef in sync so async callbacks always have the latest list
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
     // Auto-scroll when messages change - only if user is already at bottom
     // Skip when we just prepended older messages (loading older)
@@ -551,8 +557,25 @@ export default function Index({ chats, users, auth }: PageProps) {
     const refreshMessages = async () => {
         if (!selectedChat) return;
         try {
-            const response = await axios.get(`/api/chats/${selectedChat}`);
-            setMessages(response.data.messages || []);
+            const current = messagesRef.current;
+            const lastId = current.length > 0 ? current[current.length - 1].id : null;
+            const params = lastId ? { after_id: lastId } : {};
+            const response = await axios.get(`/api/chats/${selectedChat}`, { params });
+            const incoming: Message[] = response.data.messages || [];
+            if (lastId) {
+                // Append only messages that aren't already in the list
+                if (incoming.length > 0) {
+                    setMessages(prev => {
+                        const existingIds = new Set(prev.map(m => m.id));
+                        const newOnes = incoming.filter(m => !existingIds.has(m.id));
+                        return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+                    });
+                }
+            } else {
+                // No messages loaded yet — full initial load
+                setMessages(incoming);
+                setHasMoreMessages(response.data.has_more ?? false);
+            }
         } catch (error) {
             console.error('Error refreshing messages:', error);
         }
