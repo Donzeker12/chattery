@@ -23,6 +23,7 @@ class AdminController extends Controller
                 'name' => $user->name,
                 'is_admin' => $user->is_admin,
                 'is_banned' => !is_null($user->banned_at),
+                'is_hidden' => $user->is_hidden,
                 'is_online' => $isOnline,
                 'created_at' => $user->created_at->format('d-m-Y H:i'),
                 'last_seen' => $user->last_seen_at ? $user->last_seen_at->diffForHumans() : 'Nooit',
@@ -89,6 +90,52 @@ class AdminController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Ban is opgeheven'
+        ]);
+    }
+
+    public function hideUser(Request $request, User $user)
+    {
+        $user->is_hidden = true;
+        $user->save();
+
+        // Log admin action
+        AdminLog::create([
+            'admin_user_id' => Auth::id(),
+            'action' => 'hide_user',
+            'target_user_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'details' => [
+                'user_name' => $user->name,
+            ],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Gebruiker is verborgen'
+        ]);
+    }
+
+    public function unhideUser(Request $request, User $user)
+    {
+        $user->is_hidden = false;
+        $user->save();
+
+        // Log admin action
+        AdminLog::create([
+            'admin_user_id' => Auth::id(),
+            'action' => 'unhide_user',
+            'target_user_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'details' => [
+                'user_name' => $user->name,
+            ],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Gebruiker is zichtbaar'
         ]);
     }
 }

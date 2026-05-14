@@ -8,6 +8,7 @@ interface User {
     name: string;
     is_admin: boolean;
     is_banned: boolean;
+    is_hidden: boolean;
     is_online: boolean;
     created_at: string;
     last_seen: string;
@@ -54,6 +55,40 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
             }
         } catch (error: any) {
             alert(error.response?.data?.message || 'Er ging iets mis bij het unbannen');
+        }
+    };
+
+    const handleHide = async (userId: number) => {
+        if (!confirm('Weet je zeker dat je deze gebruiker wilt verbergen?')) {
+            return;
+        }
+
+        try {
+            const response = await axios.post(`/admin/hide/${userId}`);
+            if (response.data.success) {
+                // Update the user in the list
+                setUsers(users.map(user => 
+                    user.id === userId ? { ...user, is_hidden: true } : user
+                ));
+                alert(response.data.message);
+            }
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Er ging iets mis bij het verbergen');
+        }
+    };
+
+    const handleUnhide = async (userId: number) => {
+        try {
+            const response = await axios.post(`/admin/unhide/${userId}`);
+            if (response.data.success) {
+                // Update the user in the list
+                setUsers(users.map(user => 
+                    user.id === userId ? { ...user, is_hidden: false } : user
+                ));
+                alert(response.data.message);
+            }
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Er ging iets mis bij het zichtbaar maken');
         }
     };
 
@@ -127,6 +162,9 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                                             Status
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
+                                            Zichtbaarheid
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                                             Acties
                                         </th>
                                     </tr>
@@ -173,22 +211,50 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                {user.is_hidden ? (
+                                                    <span className="px-2 py-1 text-xs bg-purple-500/80 text-white rounded">
+                                                        Verborgen
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2 py-1 text-xs bg-blue-500/80 text-white rounded">
+                                                        Zichtbaar
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                                                 {!user.is_admin && (
-                                                    user.is_banned ? (
-                                                        <button
-                                                            onClick={() => handleUnban(user.id)}
-                                                            className="px-3 py-1 bg-green-500/80 hover:bg-green-600 text-white rounded transition"
-                                                        >
-                                                            Unban
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleBan(user.id)}
-                                                            className="px-3 py-1 bg-red-500/80 hover:bg-red-600 text-white rounded transition"
-                                                        >
-                                                            Ban
-                                                        </button>
-                                                    )
+                                                    <>
+                                                        {user.is_banned ? (
+                                                            <button
+                                                                onClick={() => handleUnban(user.id)}
+                                                                className="px-3 py-1 bg-green-500/80 hover:bg-green-600 text-white rounded transition"
+                                                            >
+                                                                Unban
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleBan(user.id)}
+                                                                className="px-3 py-1 bg-red-500/80 hover:bg-red-600 text-white rounded transition"
+                                                            >
+                                                                Ban
+                                                            </button>
+                                                        )}
+                                                        {user.is_hidden ? (
+                                                            <button
+                                                                onClick={() => handleUnhide(user.id)}
+                                                                className="px-3 py-1 bg-blue-500/80 hover:bg-blue-600 text-white rounded transition"
+                                                            >
+                                                                Zichtbaar
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleHide(user.id)}
+                                                                className="px-3 py-1 bg-purple-500/80 hover:bg-purple-600 text-white rounded transition"
+                                                            >
+                                                                Verbergen
+                                                            </button>
+                                                        )}
+                                                    </>
                                                 )}
                                             </td>
                                         </tr>

@@ -67,4 +67,6 @@ Route::middleware(['auth', 'admin', 'throttle:60,1'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])->name('admin');
     Route::post('/admin/ban/{user}', [AdminController::class, 'banUser'])->name('admin.ban');
     Route::post('/admin/unban/{user}', [AdminController::class, 'unbanUser'])->name('admin.unban');
+    Route::post('/admin/hide/{user}', [AdminController::class, 'hideUser'])->name('admin.hide');
+    Route::post('/admin/unhide/{user}', [AdminController::class, 'unhideUser'])->name('admin.unhide');
 });

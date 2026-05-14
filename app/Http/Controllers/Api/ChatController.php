@@ -563,6 +563,7 @@ class ChatController extends Controller
         $user = Auth::user();
         
         $users = User::where('id', '!=', $user->id)
+            ->where('is_hidden', false)
             ->select('id', 'name', 'profile_photo_path')
             ->get()
             ->map(function ($u) {

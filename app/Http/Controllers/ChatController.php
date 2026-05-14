@@ -397,8 +397,9 @@ class ChatController extends Controller
             return response()->json(['users' => []]);
         }
         
-        // Search only on name (not email)
+        // Search only on name (not email), exclude hidden users and current user
         $users = User::where('id', '!=', $user->id)
+            ->where('is_hidden', false)
             ->where(function ($q) use ($query) {
                 $q->where('name', 'LIKE', $query . '%')
                   ->orWhere('name', 'LIKE', '% ' . $query . '%');
