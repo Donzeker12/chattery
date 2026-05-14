@@ -18,14 +18,22 @@ interface PageProps {
     };
 }
 
-type SettingsTab = 'profiel' | 'beveiliging' | 'gesprekken' | 'thema';
+type SettingsTab = 'profiel' | 'beveiliging' | 'gesprekken' | 'thema' | 'extra';
 
 const menuItems: { id: SettingsTab; label: string; icon: string; description: string }[] = [
     { id: 'profiel', label: 'Profiel', icon: '👤', description: 'Foto en naam' },
     { id: 'beveiliging', label: 'Beveiliging', icon: '🔐', description: 'Wachtwoord' },
     { id: 'gesprekken', label: 'Gesprekken', icon: '💬', description: 'Verborgen chats' },
     { id: 'thema', label: 'Thema', icon: '🎨', description: 'Kleurstelling' },
+    { id: 'extra', label: 'Extra features', icon: '⚡', description: 'Voorkeuren en app' },
 ];
+
+interface ExtraSettings {
+    darkMode: boolean;
+    chatAnimations: boolean;
+    soundNotifications: boolean;
+    typingIndicator: boolean;
+}
 
 export default function Settings() {
     const { auth } = usePage<PageProps>().props;
@@ -37,6 +45,12 @@ export default function Settings() {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [selectedTheme, setSelectedTheme] = useState('default');
+    const [extraSettings, setExtraSettings] = useState<ExtraSettings>({
+        darkMode: false,
+        chatAnimations: true,
+        soundNotifications: true,
+        typingIndicator: true,
+    });
     
     const { data, setData, post, processing, errors, reset } = useForm({
         current_password: '',
@@ -100,6 +114,13 @@ export default function Settings() {
         setTimeout(() => setShowSuccessModal(false), 3000);
     };
 
+    const handleExtraSettingChange = (setting: keyof ExtraSettings) => {
+        setExtraSettings((prev) => ({
+            ...prev,
+            [setting]: !prev[setting],
+        }));
+    };
+
     const handleBackToChat = () => {
         router.visit('/chat');
     };
@@ -127,6 +148,8 @@ export default function Settings() {
                 return <GesprekkenContent hiddenChats={hiddenChats} loadingHiddenChats={loadingHiddenChats} unhideChat={unhideChat} />;
             case 'thema':
                 return <ThemaContent selectedTheme={selectedTheme} onThemeChange={handleThemeChange} />;
+            case 'extra':
+                return <ExtraFeaturesContent settings={extraSettings} onToggle={handleExtraSettingChange} />;
             default:
                 return null;
         }
@@ -512,6 +535,85 @@ const ThemaContent: React.FC<ThemaContentProps> = ({ selectedTheme, onThemeChang
         <div className="bg-white rounded-xl shadow-lg p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Voorvertoning</h3>
             <div className={`${themes.find(t => t.id === selectedTheme)?.bg} h-40 rounded-xl`}></div>
+        </div>
+    </div>
+);
+
+interface ExtraFeaturesContentProps {
+    settings: ExtraSettings;
+    onToggle: (setting: keyof ExtraSettings) => void;
+}
+
+const ExtraFeaturesContent: React.FC<ExtraFeaturesContentProps> = ({ settings, onToggle }) => (
+    <div className="space-y-6">
+        <div className="bg-slate-900 text-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <span className="text-emerald-400">⚡</span>
+                Extra features
+            </h2>
+
+            <div className="bg-slate-800 rounded-xl p-5 space-y-4">
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                    <span className="text-slate-100 font-medium">Donkere modus</span>
+                    <input
+                        type="checkbox"
+                        checked={settings.darkMode}
+                        onChange={() => onToggle('darkMode')}
+                        className="h-4 w-4 accent-red-500"
+                    />
+                </label>
+
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                    <span className="text-slate-100 font-medium">Chat animaties</span>
+                    <input
+                        type="checkbox"
+                        checked={settings.chatAnimations}
+                        onChange={() => onToggle('chatAnimations')}
+                        className="h-4 w-4 accent-red-500"
+                    />
+                </label>
+
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                    <span className="text-slate-100 font-medium">Geluidsmeldingen</span>
+                    <input
+                        type="checkbox"
+                        checked={settings.soundNotifications}
+                        onChange={() => onToggle('soundNotifications')}
+                        className="h-4 w-4 accent-red-500"
+                    />
+                </label>
+
+                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                    <span className="text-slate-100 font-medium">Typing indicator</span>
+                    <input
+                        type="checkbox"
+                        checked={settings.typingIndicator}
+                        onChange={() => onToggle('typingIndicator')}
+                        className="h-4 w-4 accent-red-500"
+                    />
+                </label>
+            </div>
+        </div>
+
+        <div className="bg-slate-900 text-white rounded-xl shadow-lg p-6">
+            <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <span className="text-violet-500">📱</span>
+                Android App
+            </h3>
+
+            <div className="bg-slate-800 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <p className="font-semibold text-lg text-white">Download de app</p>
+                    <p className="text-slate-300">Gebruik Chattery op je Android telefoon</p>
+                </div>
+                <a
+                    href="/downloads/chattery.apk"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold hover:from-violet-700 hover:to-purple-700 transition-colors"
+                >
+                    <span>⬇</span>
+                    Download APK
+                </a>
+            </div>
         </div>
     </div>
 );
