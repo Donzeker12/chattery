@@ -184,6 +184,7 @@ export default function Index({ chats, users, auth }: PageProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const isLoadingOlderRef = useRef(false);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastScreenshotReportRef = useRef<number>(0);
 
@@ -318,10 +319,9 @@ export default function Index({ chats, users, auth }: PageProps) {
     };
 
     // Auto-scroll when messages change - only if user is already at bottom
+    // Skip when we just prepended older messages (loading older)
     useEffect(() => {
-        if (messages.length > 0) {
-            // Only auto-scroll if user is already at the bottom
-            // This prevents interrupting users who are reading older messages
+        if (messages.length > 0 && !isLoadingOlderRef.current) {
             if (isAtBottom) {
                 scrollToBottom();
             }
@@ -531,12 +531,14 @@ export default function Index({ chats, users, auth }: PageProps) {
             const older = response.data.messages || [];
             setHasMoreMessages(response.data.has_more ?? false);
             if (older.length > 0) {
+                isLoadingOlderRef.current = true;
                 setMessages(prev => [...older, ...prev]);
                 // Maintain scroll position so user doesn't jump
                 requestAnimationFrame(() => {
                     if (container) {
                         container.scrollTop = container.scrollHeight - prevScrollHeight;
                     }
+                    isLoadingOlderRef.current = false;
                 });
             }
         } catch (error) {
