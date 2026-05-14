@@ -252,6 +252,39 @@ export default function Index({ chats, users, auth }: PageProps) {
         return () => clearInterval(interval);
     }, [selectedChat]);
 
+    // Live update chat list every 1.5 seconds for online status
+    useEffect(() => {
+        const interval = setInterval(() => {
+            refreshChatList();
+        }, 1500);
+        
+        return () => clearInterval(interval);
+    }, []);
+
+    // Live update participant online status every 1.5 seconds when chat is open
+    useEffect(() => {
+        if (!selectedChat) return;
+        
+        const updateParticipantStatus = async () => {
+            try {
+                const response = await axios.get(`/api/chats/${selectedChat}`);
+                if (response.data.participant) {
+                    setCurrentParticipant(response.data.participant);
+                }
+            } catch (error) {
+                console.error('Error updating participant status:', error);
+            }
+        };
+        
+        // Update immediately
+        updateParticipantStatus();
+        
+        // Then update every 1.5 seconds
+        const interval = setInterval(updateParticipantStatus, 1500);
+        
+        return () => clearInterval(interval);
+    }, [selectedChat]);
+
     // Refresh media when filter changes
     useEffect(() => {
         if (showMediaGallery && selectedChat) {
