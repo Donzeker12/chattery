@@ -1320,9 +1320,10 @@ export default function Index({ chats, users, auth }: PageProps) {
                             </div>
 
                             {/* Messages container */}
+                            <div className="relative flex-1 min-h-0">
                             <div 
                                 ref={messagesContainerRef}
-                                className="overflow-y-auto relative flex-1 min-h-0"
+                                className="overflow-y-auto h-full"
                             >
                                 {loadingMessages ? (
                                     <div className="flex items-center justify-center h-32">
@@ -1560,6 +1561,8 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     </div>
                                 )}
                                 
+                            </div>
+
                                 {/* Scroll to bottom button */}
                                 {!isAtBottom && (
                                     <button
