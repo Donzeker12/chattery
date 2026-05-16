@@ -357,6 +357,9 @@ export default function Index({ chats, users, auth }: PageProps) {
             scrollToBottom();
             setIsAtBottom(true); // Ensure we're marked as at bottom
         }
+        if (selectedChat) {
+            setTimeout(() => messageInputRef.current?.focus(), 100);
+        }
     }, [selectedChat]);
     
     // Auto-refresh messages every 3 seconds when chat is open
