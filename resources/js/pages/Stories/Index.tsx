@@ -58,7 +58,12 @@ export default function StoriesIndex() {
         setLoadingStories(true);
         try {
             const response = await axios.get('/api/stories');
-            setStories(Array.isArray(response.data) ? response.data : []);
+            const data: Story[] = Array.isArray(response.data) ? response.data : [];
+            setStories(data);
+            // Mark all loaded stories as viewed
+            data.forEach(story => {
+                axios.post(`/api/stories/${story.id}/view`).catch(() => {});
+            });
         } catch (error) {
             console.error('Error loading stories:', error);
         } finally {

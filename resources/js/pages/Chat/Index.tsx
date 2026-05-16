@@ -65,6 +65,7 @@ interface Story {
     content: string;
     image_path?: string | null;
     created_at: string;
+    is_viewed: boolean;
     user?: StoryUser;
 }
 
@@ -1052,6 +1053,9 @@ export default function Index({ chats, users, auth }: PageProps) {
         if (!story.user_id || seenStoryUsers.has(story.user_id)) {
             return false;
         }
+        // Only show users who have at least one unviewed story
+        const hasUnviewed = stories.some(s => s.user_id === story.user_id && !s.is_viewed);
+        if (!hasUnviewed) return false;
         seenStoryUsers.add(story.user_id);
         return true;
     });
@@ -1183,7 +1187,17 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     <button
                                         key={story.id}
                                         type="button"
-                                        onClick={() => router.visit(`/stories?story=${story.id}`)}
+                                        onClick={async () => {
+                                            // Mark all stories from this user as viewed
+                                            const userStories = stories.filter(s => s.user_id === story.user_id);
+                                            await Promise.all(userStories.map(s =>
+                                                axios.post(`/api/stories/${s.id}/view`).catch(() => {})
+                                            ));
+                                            setStories(prev => prev.map(s =>
+                                                s.user_id === story.user_id ? { ...s, is_viewed: true } : s
+                                            ));
+                                            router.visit(`/stories?story=${story.id}`);
+                                        }}
                                         className="flex flex-col items-center min-w-[64px]"
                                     >
                                         <div className="p-[2px] rounded-full bg-gradient-to-r from-pink-500 via-orange-400 to-yellow-400">

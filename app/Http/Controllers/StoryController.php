@@ -6,6 +6,7 @@ use App\Models\Chat;
 use App\Models\Story;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\StoryImage;
 
@@ -57,11 +58,16 @@ class StoryController extends Controller
             ->unique()
             ->values();
 
+        $viewedStoryIds = DB::table('story_views')
+            ->where('viewer_user_id', $userId)
+            ->pluck('story_id')
+            ->flip();
+
         $stories = Story::with('user:id,name,profile_photo_path')
             ->whereIn('user_id', $chatUserIds)
             ->latest()
             ->get()
-            ->map(fn (Story $story) => $this->formatStory($story));
+            ->map(fn (Story $story) => $this->formatStory($story, $viewedStoryIds->has($story->id)));
 
         return response()->json($stories->values());
     }
@@ -145,7 +151,7 @@ class StoryController extends Controller
         ]);
     }
 
-    private function formatStory(Story $story): array
+    private function formatStory(Story $story, bool $isViewed = false): array
     {
         return [
             'id' => $story->id,
@@ -156,6 +162,7 @@ class StoryController extends Controller
             ])->toArray(),
             'created_at' => $story->created_at,
             'user_id' => $story->user_id,
+            'is_viewed' => $isViewed,
             'user' => [
                 'id' => $story->user?->id,
                 'name' => $story->user?->name,
@@ -164,5 +171,16 @@ class StoryController extends Controller
                     : null,
             ],
         ];
+    }
+
+    public function markViewed(Story $story)
+    {
+        DB::table('story_views')->insertOrIgnore([
+            'story_id' => $story->id,
+            'viewer_user_id' => Auth::id(),
+            'viewed_at' => now(),
+        ]);
+
+        return response()->json(['success' => true]);
     }
 }
