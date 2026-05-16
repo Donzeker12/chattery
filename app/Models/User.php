@@ -16,6 +16,7 @@ use Laravel\Sanctum\HasApiTokens;
     'name',
     'email',
     'password',
+    'account_type',
     'last_seen_at',
     'profile_photo_path',
     'is_hidden',

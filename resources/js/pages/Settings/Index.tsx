@@ -23,7 +23,7 @@ interface PageProps {
     };
 }
 
-type SettingsTab = 'profiel' | 'beveiliging' | 'gesprekken' | 'thema' | 'extra';
+type SettingsTab = 'profiel' | 'beveiliging' | 'gesprekken' | 'thema' | 'extra' | 'verhalen';
 
 const menuItems: { id: SettingsTab; label: string; icon: string; description: string }[] = [
     { id: 'profiel', label: 'Profiel', icon: '👤', description: 'Foto en naam' },
@@ -31,6 +31,7 @@ const menuItems: { id: SettingsTab; label: string; icon: string; description: st
     { id: 'gesprekken', label: 'Gesprekken', icon: '💬', description: 'Verborgen chats' },
     { id: 'thema', label: 'Thema', icon: '🎨', description: 'Kleurstelling' },
     { id: 'extra', label: 'Extra features', icon: '⚡', description: 'Voorkeuren en app' },
+    { id: 'verhalen', label: 'Verhalen', icon: '📖', description: 'Bekijk en deel verhalen' },
 ];
 
 interface ExtraSettings {
@@ -195,6 +196,8 @@ export default function Settings() {
                 return <ThemaContent selectedTheme={selectedTheme} onThemeChange={handleThemeChange} />;
             case 'extra':
                 return <ExtraFeaturesContent settings={extraSettings} onToggle={handleExtraSettingChange} />;
+            case 'verhalen':
+                return <VerhalenContent />;
             default:
                 return null;
         }
@@ -660,6 +663,35 @@ const ExtraFeaturesContent: React.FC<ExtraFeaturesContentProps> = ({ settings, o
                     <span>⬇</span>
                     Download APK
                 </a>
+            </div>
+        </div>
+    </div>
+);
+
+const VerhalenContent: React.FC = () => (
+    <div className="space-y-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Verhalen</h2>
+            <p className="text-gray-600 mb-6">
+                Bekijk de verhalen van je contacten of plaats zelf een nieuw verhaal met tekst en foto.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                    onClick={() => router.visit('/stories')}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors"
+                >
+                    <span>📖</span>
+                    Open verhalenpagina
+                </button>
+
+                <button
+                    onClick={() => router.visit('/chat')}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-gray-100 text-gray-800 font-semibold hover:bg-gray-200 transition-colors"
+                >
+                    <span>💬</span>
+                    Terug naar chats
+                </button>
             </div>
         </div>
     </div>

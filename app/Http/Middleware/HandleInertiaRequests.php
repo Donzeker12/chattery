@@ -44,6 +44,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
                     'is_admin' => $request->user()->is_admin,
+                    'account_type' => $request->user()->account_type,
                     'profile_photo_url' => $request->user()->profile_photo_path 
                         ? asset('storage/' . $request->user()->profile_photo_path) 
                         : null,

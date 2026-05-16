@@ -53,6 +53,21 @@ interface Message {
     }>;
 }
 
+interface StoryUser {
+    id: number;
+    name: string;
+    profile_photo_url?: string | null;
+}
+
+interface Story {
+    id: number;
+    user_id: number;
+    content: string;
+    image_path?: string | null;
+    created_at: string;
+    user?: StoryUser;
+}
+
 interface PageProps {
     chats: Chat[];
     users: User[];
@@ -1011,6 +1026,30 @@ export default function Index({ chats, users, auth }: PageProps) {
         return themes[chatTheme] || themes.default;
     };
 
+    const [stories, setStories] = useState<Story[]>([]);
+
+    useEffect(() => {
+        const fetchStories = async () => {
+            try {
+                const response = await axios.get('/api/stories');
+                setStories(response.data);
+            } catch (error) {
+                console.error('Error fetching stories:', error);
+            }
+        };
+
+        fetchStories();
+    }, []);
+
+    const seenStoryUsers = new Set<number>();
+    const storyPreviews = stories.filter((story) => {
+        if (!story.user_id || seenStoryUsers.has(story.user_id)) {
+            return false;
+        }
+        seenStoryUsers.add(story.user_id);
+        return true;
+    });
+
     return (
         <>
             <div className={`h-dvh overflow-hidden ${getBackgroundTheme()} transition-colors duration-200`}>
@@ -1031,7 +1070,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         name={auth.user.name} 
                                         size="md"
                                     />
-                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></div>
                                 </div>
                                 <div className="min-w-0">
                                     <h1 className="text-lg font-bold text-white">
@@ -1128,6 +1167,36 @@ export default function Index({ chats, users, auth }: PageProps) {
                     {/* Modern Notification Settings */}
                     <div className="p-4 border-b border-white/10 bg-white/5 backdrop-blur-sm">
                         <NotificationManager />
+                    </div>
+
+                    <div className="px-4 py-3 border-b border-white/10 bg-white/5 backdrop-blur-sm">
+                        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Verhalen</h2>
+                        {storyPreviews.length > 0 ? (
+                            <div className="flex items-start gap-3 overflow-x-auto pb-1">
+                                {storyPreviews.slice(0, 12).map((story) => (
+                                    <button
+                                        key={story.id}
+                                        type="button"
+                                        onClick={() => router.visit(`/stories?story=${story.id}`)}
+                                        className="flex flex-col items-center min-w-[64px]"
+                                    >
+                                        <div className="p-[2px] rounded-full bg-gradient-to-r from-pink-500 via-orange-400 to-yellow-400">
+                                            <Avatar
+                                                photoUrl={story.user?.profile_photo_url || null}
+                                                name={story.user?.name || 'Gebruiker'}
+                                                size="md"
+                                                className="ring-2 ring-white dark:ring-gray-900 rounded-full"
+                                            />
+                                        </div>
+                                        <span className="mt-1 text-[11px] text-gray-700 dark:text-gray-300 truncate w-full text-center">
+                                            {story.user?.name || 'Gebruiker'}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Nog geen verhalen van je contacten.</p>
+                        )}
                     </div>
 
                     {/* Modern Chat List */}
@@ -1327,7 +1396,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         title="Media gallerij"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
                                         </svg>
                                     </button>
                                     <button
@@ -1424,7 +1493,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                                                     </svg>
                                                                                 ) : (
                                                                                     <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 17M9.878 9.878l-3-3m12.121 12.121L21 21" />
                                                                                     </svg>
                                                                                 )}
                                                                             </div>
@@ -1566,14 +1635,14 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                                     </div>
                                                                     <div className="grid grid-cols-8 gap-2 max-h-40 overflow-y-auto">
                                                                         {['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '🥰', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤩', '🤔', '🫡', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '🥱', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🫠', '🤑', '😲', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😮‍💨', '😵', '😵‍💫', '🥴', '😠', '😡', '🤬', '🤕', '😷', '🤒', '🤮', '🤧', '🥵', '🥶', '🥳', '🥺', '🦄', '🎉', '🎊', '🔥', '💯', '💖', '💝', '💘', '💕', '💗', '💙', '💚', '💛', '🧡', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💟', '♥️', '💌', '💤', '💢', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💫', '💦', '💨', '🕳️', '💣', '💥', '💢', '💫', '💦', '💨', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🫰', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '👊', '✊', '🤛', '🤜', '👏', '🙌', '🫶', '👐', '🤲', '🤝', '🙏'].map(emoji => (
-                                                                            <button 
-                                                                                key={emoji}
-                                                                                onClick={() => handleEmojiSelect(emoji)}
-                                                                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-lg flex items-center justify-center"
-                                                                            >
-                                                                                {emoji}
-                                                                            </button>
-                                                                        ))}
+                                                                        <button 
+                                                                            key={emoji}
+                                                                            onClick={() => handleEmojiSelect(emoji)}
+                                                                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-lg flex items-center justify-center"
+                                                                        >
+                                                                            {emoji}
+                                                                        </button>
+                                                                    ))}
                                                                     </div>
                                                                     <button
                                                                         onClick={() => setShowEmojiPickerForMessage(null)}
@@ -1681,6 +1750,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                                 <button
                                                                     onClick={() => setShowEmojiPicker(false)}
                                                                     className="mt-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                                                                    title="Sluiten"
                                                                 >
                                                                     Sluiten
                                                                 </button>
@@ -2022,7 +2092,6 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         setSelectedFile(null);
                                         if (filePreviewUrl) { URL.revokeObjectURL(filePreviewUrl); setFilePreviewUrl(null); }
                                         setViewOnce(false);
-                                        setNewMessage('');
                                         if (fileInputRef.current) fileInputRef.current.value = '';
                                     }}
                                     className="flex-1 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm"
@@ -2250,7 +2319,8 @@ export default function Index({ chats, users, auth }: PageProps) {
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
                                         Profiel
                                     </h3>

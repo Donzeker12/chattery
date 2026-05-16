@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\MobilePushTokenController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushNotificationController;
+use App\Http\Controllers\StoryController;
 use Illuminate\Support\Facades\Route;
 
 // Public API routes
@@ -65,4 +66,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // Users
     Route::get('/users', [ChatController::class, 'getUsers']);
+
+    // Stories
+    Route::post('/stories', [StoryController::class, 'store']);
+    Route::get('/stories/mine', [StoryController::class, 'mine']);
+    Route::get('/stories', [StoryController::class, 'index']);
+    Route::put('/stories/{story}', [StoryController::class, 'update']);
+    Route::delete('/stories/{story}', [StoryController::class, 'destroy']);
 });

@@ -38,6 +38,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', function () {
         return Inertia::render('Settings/Index');
     })->name('settings');
+
+    // Stories routes
+    Route::get('/stories', function () {
+        return Inertia::render('Stories/Index');
+    })->name('stories');
     
     Route::get('/chat', [ChatController::class, 'index'])->name('chat');
     Route::get('/chat/list', [ChatController::class, 'getChatList'])->name('chat.list');
