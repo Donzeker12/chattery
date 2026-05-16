@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import axios from '@/lib/axios';
 import Avatar from '@/components/Avatar';
@@ -34,7 +34,22 @@ interface Props {
 
 export default function AdminIndex({ users: initialUsers, total_users, online_users, screenshot_events, screenshot_events_last_24h }: Props) {
     const [users, setUsers] = useState<User[]>(initialUsers);
-    const [activeTab, setActiveTab] = useState<'users' | 'security'>('users');
+    const [activeTab, setActiveTab] = useState<'users' | 'security' | 'emojis'>('users');
+
+    // Custom emoji state
+    const [customEmojis, setCustomEmojis] = useState<{id: number; name: string; url: string}[]>([]);
+    const [emojiName, setEmojiName] = useState('');
+    const [emojiFile, setEmojiFile] = useState<File | null>(null);
+    const [emojiPreview, setEmojiPreview] = useState<string | null>(null);
+    const [emojiError, setEmojiError] = useState<string | null>(null);
+    const [emojiLoading, setEmojiLoading] = useState(false);
+    const emojiFileRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (activeTab === 'emojis' && customEmojis.length === 0) {
+            axios.get('/api/custom-emojis').then(res => setCustomEmojis(res.data));
+        }
+    }, [activeTab]);
 
     const handleBan = async (userId: number) => {
         if (!confirm('Weet je zeker dat je deze gebruiker wilt bannen?')) {
@@ -190,6 +205,16 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                             }`}
                         >
                             Security events
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('emojis')}
+                            className={`px-4 py-2 rounded-lg transition ${
+                                activeTab === 'emojis'
+                                    ? 'bg-white text-purple-700 font-semibold'
+                                    : 'bg-white/15 hover:bg-white/25 text-white'
+                            }`}
+                        >
+                            Custom Emojis
                         </button>
                     </div>
 
@@ -377,6 +402,111 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                             </table>
                         </div>
                     </div>
+                    )}
+
+                    {activeTab === 'emojis' && (
+                        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
+                            <h2 className="text-xl font-semibold text-white mb-4">Custom Emojis beheren</h2>
+
+                            {/* Upload form */}
+                            <div className="bg-white/10 rounded-xl p-4 mb-6">
+                                <h3 className="text-white font-medium mb-3">Nieuwe emoji uploaden</h3>
+                                <div className="flex flex-wrap gap-3 items-end">
+                                    <div>
+                                        <label className="text-white/80 text-sm block mb-1">Naam <span className="text-white/50">(alleen a-z, 0-9, _)</span></label>
+                                        <input
+                                            type="text"
+                                            value={emojiName}
+                                            onChange={e => setEmojiName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                                            placeholder="bijv. party_blob"
+                                            className="px-3 py-2 rounded-lg bg-white/20 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/50 w-48"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-white/80 text-sm block mb-1">Afbeelding / GIF (max 2MB)</label>
+                                        <input
+                                            ref={emojiFileRef}
+                                            type="file"
+                                            accept="image/png,image/jpeg,image/gif,image/webp"
+                                            className="hidden"
+                                            onChange={e => {
+                                                const f = e.target.files?.[0] ?? null;
+                                                setEmojiFile(f);
+                                                setEmojiPreview(f ? URL.createObjectURL(f) : null);
+                                            }}
+                                        />
+                                        <button
+                                            onClick={() => emojiFileRef.current?.click()}
+                                            className="px-3 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white border border-white/20 transition flex items-center gap-2"
+                                        >
+                                            {emojiPreview ? (
+                                                <img src={emojiPreview} className="w-6 h-6 object-contain rounded" alt="preview" />
+                                            ) : (
+                                                <span>📁</span>
+                                            )}
+                                            <span>{emojiFile ? emojiFile.name : 'Kies bestand'}</span>
+                                        </button>
+                                    </div>
+                                    <button
+                                        disabled={emojiLoading || !emojiName || !emojiFile}
+                                        onClick={async () => {
+                                            if (!emojiFile || !emojiName) return;
+                                            setEmojiLoading(true);
+                                            setEmojiError(null);
+                                            try {
+                                                const fd = new FormData();
+                                                fd.append('name', emojiName);
+                                                fd.append('image', emojiFile);
+                                                const res = await axios.post('/api/custom-emojis', fd, {
+                                                    headers: { 'Content-Type': 'multipart/form-data' }
+                                                });
+                                                setCustomEmojis(prev => [...prev, res.data]);
+                                                setEmojiName('');
+                                                setEmojiFile(null);
+                                                setEmojiPreview(null);
+                                                if (emojiFileRef.current) emojiFileRef.current.value = '';
+                                            } catch (err: any) {
+                                                const msg = err.response?.data?.errors?.name?.[0]
+                                                    ?? err.response?.data?.errors?.image?.[0]
+                                                    ?? err.response?.data?.message
+                                                    ?? 'Er is iets misgegaan.';
+                                                setEmojiError(msg);
+                                            } finally {
+                                                setEmojiLoading(false);
+                                            }
+                                        }}
+                                        className="px-4 py-2 rounded-lg bg-white text-purple-700 font-semibold hover:bg-white/90 transition disabled:opacity-50"
+                                    >
+                                        {emojiLoading ? 'Uploaden...' : 'Uploaden'}
+                                    </button>
+                                </div>
+                                {emojiError && <p className="text-red-300 mt-2 text-sm">{emojiError}</p>}
+                                <p className="text-white/50 text-xs mt-2">Gebruik als <code className="bg-white/10 px-1 rounded">:naam:</code> in de chat</p>
+                            </div>
+
+                            {/* Emoji grid */}
+                            {customEmojis.length === 0 ? (
+                                <p className="text-white/60 text-sm">Nog geen custom emojis.</p>
+                            ) : (
+                                <div className="flex flex-wrap gap-4">
+                                    {customEmojis.map(emoji => (
+                                        <div key={emoji.id} className="flex flex-col items-center gap-1 bg-white/10 rounded-xl p-3 relative group">
+                                            <img src={emoji.url} alt={emoji.name} className="w-12 h-12 object-contain" />
+                                            <span className="text-white/80 text-xs">:{emoji.name}:</span>
+                                            <button
+                                                onClick={async () => {
+                                                    if (!confirm(`Emoji :${emoji.name}: verwijderen?`)) return;
+                                                    await axios.delete(`/api/custom-emojis/${emoji.id}`);
+                                                    setCustomEmojis(prev => prev.filter(e => e.id !== emoji.id));
+                                                }}
+                                                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                                                title="Verwijderen"
+                                            >×</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

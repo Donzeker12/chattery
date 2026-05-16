@@ -15,6 +15,32 @@ const isSingleEmoji = (text: string): boolean => {
     }
 };
 
+// Render message text with custom emoji :name: tags replaced by images
+function renderWithCustomEmojis(
+    text: string,
+    emojis: {id: number; name: string; url: string}[]
+): React.ReactNode {
+    if (!text || emojis.length === 0) return text;
+    const emojiMap = new Map(emojis.map(e => [e.name, e.url]));
+    const parts = text.split(/(:[\w]+:)/g);
+    if (parts.length === 1) return text;
+    return parts.map((part, i) => {
+        const match = part.match(/^:([\w]+):$/);
+        if (match && emojiMap.has(match[1])) {
+            return (
+                <img
+                    key={i}
+                    src={emojiMap.get(match[1])}
+                    alt={part}
+                    title={part}
+                    className="inline-block w-6 h-6 object-contain align-middle"
+                />
+            );
+        }
+        return part;
+    });
+}
+
 interface User {
     id: number;
     name: string;
@@ -107,6 +133,8 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [isSearching, setIsSearching] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showEmojiPickerForMessage, setShowEmojiPickerForMessage] = useState<number | null>(null);
+    const [emojiPickerTab, setEmojiPickerTab] = useState<'standard' | 'custom'>('standard');
+    const [customEmojis, setCustomEmojis] = useState<{id: number; name: string; url: string}[]>([]);
     const [showNewChatModal, setShowNewChatModal] = useState(false);
     const [chatsList, setChatsList] = useState<Chat[]>(Array.isArray(chats) ? chats : []);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -239,6 +267,10 @@ export default function Index({ chats, users, auth }: PageProps) {
     };
 
     // Effects
+    useEffect(() => {
+        axios.get('/api/custom-emojis').then(res => setCustomEmojis(res.data)).catch(() => {});
+    }, []);
+
     useEffect(() => {
         const checkMobile = () => {
             const mobile = window.innerWidth < 768;
@@ -1592,7 +1624,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                                 isSingleEmoji(message.message) ? (
                                                                     <span className="emoji-animated select-none">{message.message}</span>
                                                                 ) : (
-                                                                    <p className="whitespace-pre-wrap">{message.message}</p>
+                                                                    <p className="whitespace-pre-wrap">{renderWithCustomEmojis(message.message, customEmojis)}</p>
                                                                 )
                                                             )}
                                                             <div className={`text-xs mt-1 ${
@@ -1768,20 +1800,60 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                     <div className="absolute bottom-full left-0 mb-2 z-20">
                                                         <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-4 w-80">
                                                             <div className="flex flex-col gap-3">
-                                                                <div className="flex gap-2 text-sm font-medium text-gray-600 border-b border-gray-200 pb-2">
-                                                                    <span>😀 Emoji Picker</span>
-                                                                </div>
-                                                                <div className="grid grid-cols-8 gap-2 max-h-40 overflow-y-auto">
-                                                                    {['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '🥰', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤩', '🤔', '🫡', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '🥱', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🫠', '🤑', '😲', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😮‍💨', '😵', '😵‍💫', '🥴', '😠', '😡', '🤬', '🤕', '😷', '🤒', '🤮', '🤧', '🥵', '🥶', '🥳', '🥺', '🦄', '🎉', '🎊', '🔥', '💯', '💖', '💝', '💘', '💕', '💗', '💙', '💚', '💛', '🧡', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💟', '♥️', '💌', '💤', '💢', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💫', '💦', '💨', '🕳️', '💣', '💥', '💢', '💫', '💦', '💨', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🫰', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '👊', '✊', '🤛', '🤜', '👏', '🙌', '🫶', '👐', '🤲', '🤝', '🙏'].map(emoji => (
-                                                                        <button 
-                                                                            key={emoji}
-                                                                            onClick={() => handleEmojiSelect(emoji)}
-                                                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg flex items-center justify-center"
+                                                                <div className="flex gap-2 text-sm font-medium border-b border-gray-200 pb-2">
+                                                                    <button
+                                                                        onClick={() => setEmojiPickerTab('standard')}
+                                                                        className={`px-3 py-1 rounded-lg transition ${emojiPickerTab === 'standard' ? 'bg-gray-100 text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+                                                                    >
+                                                                        😀 Emoji
+                                                                    </button>
+                                                                    {customEmojis.length > 0 && (
+                                                                        <button
+                                                                            onClick={() => setEmojiPickerTab('custom')}
+                                                                            className={`px-3 py-1 rounded-lg transition ${emojiPickerTab === 'custom' ? 'bg-gray-100 text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
                                                                         >
-                                                                            {emoji}
+                                                                            ✨ Custom
                                                                         </button>
-                                                                    ))}
+                                                                    )}
                                                                 </div>
+
+                                                                {emojiPickerTab === 'standard' ? (
+                                                                    <div className="grid grid-cols-8 gap-2 max-h-40 overflow-y-auto">
+                                                                        {['😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '🥰', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤩', '🤔', '🫡', '🤨', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '🥱', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓', '😔', '😕', '🙃', '🫠', '🤑', '😲', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😮‍💨', '😵', '😵‍💫', '🥴', '😠', '😡', '🤬', '🤕', '😷', '🤒', '🤮', '🤧', '🥵', '🥶', '🥳', '🥺', '🦄', '🎉', '🎊', '🔥', '💯', '💖', '💝', '💘', '💕', '💗', '💙', '💚', '💛', '🧡', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💟', '♥️', '💌', '💤', '💢', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭', '💫', '💦', '💨', '🕳️', '💣', '💥', '💢', '💫', '💦', '💨', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🫰', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '👊', '✊', '🤛', '🤜', '👏', '🙌', '🫶', '👐', '🤲', '🤝', '🙏'].map(emoji => (
+                                                                            <button 
+                                                                                key={emoji}
+                                                                                onClick={() => handleEmojiSelect(emoji)}
+                                                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg flex items-center justify-center"
+                                                                            >
+                                                                                {emoji}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="grid grid-cols-5 gap-2 max-h-40 overflow-y-auto">
+                                                                        {customEmojis.map(ce => (
+                                                                            <button
+                                                                                key={ce.id}
+                                                                                onClick={() => {
+                                                                                    const tag = `:${ce.name}:`;
+                                                                                    if (showEmojiPickerForMessage) {
+                                                                                        // custom emojis can't be used as reactions (standard emojis only)
+                                                                                        setShowEmojiPickerForMessage(null);
+                                                                                    } else {
+                                                                                        setNewMessage(prev => prev + tag);
+                                                                                    }
+                                                                                    setShowEmojiPicker(false);
+                                                                                }}
+                                                                                className="flex flex-col items-center gap-1 p-2 hover:bg-gray-100 rounded-lg transition"
+                                                                                title={`:${ce.name}:`}
+                                                                            >
+                                                                                <img src={ce.url} alt={ce.name} className="w-8 h-8 object-contain" />
+                                                                                <span className="text-xs text-gray-500 truncate w-full text-center">{ce.name}</span>
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+
                                                                 <button
                                                                     onClick={() => setShowEmojiPicker(false)}
                                                                     className="mt-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-sm"

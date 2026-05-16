@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\MobilePushTokenController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushNotificationController;
+use App\Http\Controllers\CustomEmojiController;
 use App\Http\Controllers\StoryController;
 use Illuminate\Support\Facades\Route;
 
@@ -76,4 +77,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/stories/{story}/reactions/{emoji}', [StoryController::class, 'removeReaction']);
     Route::put('/stories/{story}', [StoryController::class, 'update']);
     Route::delete('/stories/{story}', [StoryController::class, 'destroy']);
+
+    // Custom emojis
+    Route::get('/custom-emojis', [CustomEmojiController::class, 'index']);
+    Route::post('/custom-emojis', [CustomEmojiController::class, 'store']);
+    Route::delete('/custom-emojis/{customEmoji}', [CustomEmojiController::class, 'destroy']);
 });
