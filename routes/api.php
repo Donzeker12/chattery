@@ -72,6 +72,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/stories/mine', [StoryController::class, 'mine']);
     Route::get('/stories', [StoryController::class, 'index']);
     Route::post('/stories/{story}/view', [StoryController::class, 'markViewed']);
+    Route::post('/stories/{story}/reactions', [StoryController::class, 'addReaction']);
+    Route::delete('/stories/{story}/reactions/{emoji}', [StoryController::class, 'removeReaction']);
     Route::put('/stories/{story}', [StoryController::class, 'update']);
     Route::delete('/stories/{story}', [StoryController::class, 'destroy']);
 });

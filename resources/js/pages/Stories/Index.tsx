@@ -15,12 +15,20 @@ interface StoryImage {
     url: string;
 }
 
+interface StoryReaction {
+    id: number;
+    emoji: string;
+    user_id: number;
+    user_name: string;
+}
+
 interface Story {
     id: number;
     user_id: number;
     content: string;
     images: StoryImage[];
     created_at: string;
+    reactions: StoryReaction[];
     user?: User;
 }
 
@@ -53,12 +61,39 @@ export default function StoriesIndex() {
     const [fullscreenImage, setFullscreenImage] = useState<{urls: string[], idx: number} | null>(null);
     const [targetStoryId, setTargetStoryId] = useState<number | null>(null);
     const [highlightedStoryId, setHighlightedStoryId] = useState<number | null>(null);
+    const [reactionPickerStoryId, setReactionPickerStoryId] = useState<number | null>(null);
+
+    const QUICK_EMOJIS = ['❤️', '😍', '😂', '😮', '👏', '🔥'];
+
+    const handleAddReaction = async (storyId: number, emoji: string) => {
+        const story = stories.find(s => s.id === storyId);
+        if (!story) return;
+        const alreadyReacted = story.reactions.some(r => r.user_id === auth.user.id && r.emoji === emoji);
+        if (alreadyReacted) {
+            // Toggle off
+            await axios.delete(`/api/stories/${storyId}/reactions/${encodeURIComponent(emoji)}`);
+            setStories(prev => prev.map(s => s.id === storyId
+                ? { ...s, reactions: s.reactions.filter(r => !(r.user_id === auth.user.id && r.emoji === emoji)) }
+                : s
+            ));
+        } else {
+            try {
+                const res = await axios.post(`/api/stories/${storyId}/reactions`, { emoji });
+                setStories(prev => prev.map(s => s.id === storyId
+                    ? { ...s, reactions: [...s.reactions, res.data.reaction] }
+                    : s
+                ));
+            } catch {}
+        }
+        setReactionPickerStoryId(null);
+    };
 
     const fetchStories = async () => {
         setLoadingStories(true);
         try {
             const response = await axios.get('/api/stories');
-            const data: Story[] = Array.isArray(response.data) ? response.data : [];
+            const data: Story[] = (Array.isArray(response.data) ? response.data : [])
+                .map((s: Story) => ({ ...s, reactions: s.reactions ?? [] }));
             setStories(data);
             // Mark all loaded stories as viewed
             data.forEach(story => {
@@ -637,6 +672,58 @@ export default function StoriesIndex() {
                                                     </div>
                                                 </div>
                                             )}
+
+                                            {/* Reactions */}
+                                            <div className="mt-3 flex items-center gap-2 flex-wrap">
+                                                {/* Grouped reaction counts */}
+                                                {Object.entries(
+                                                    (story.reactions ?? []).reduce<Record<string, {count: number, mine: boolean}>>((acc, r) => {
+                                                        if (!acc[r.emoji]) acc[r.emoji] = { count: 0, mine: false };
+                                                        acc[r.emoji].count++;
+                                                        if (r.user_id === auth.user.id) acc[r.emoji].mine = true;
+                                                        return acc;
+                                                    }, {})
+                                                ).map(([emoji, { count, mine }]) => (
+                                                    <button
+                                                        key={emoji}
+                                                        onClick={() => handleAddReaction(story.id, emoji)}
+                                                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm border transition ${
+                                                            mine
+                                                                ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
+                                                                : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                                                        }`}
+                                                        title={mine ? 'Klik om te verwijderen' : 'Klik om te reageren'}
+                                                    >
+                                                        <span>{emoji}</span>
+                                                        <span className="font-semibold text-xs">{count}</span>
+                                                    </button>
+                                                ))}
+
+                                                {/* Add reaction button */}
+                                                <div className="relative">
+                                                    <button
+                                                        onClick={() => setReactionPickerStoryId(reactionPickerStoryId === story.id ? null : story.id)}
+                                                        className="flex items-center gap-1 px-2 py-1 rounded-full text-sm border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 transition"
+                                                        title="Reageer"
+                                                    >
+                                                        <span>😊</span>
+                                                        <span className="text-xs">+</span>
+                                                    </button>
+                                                    {reactionPickerStoryId === story.id && (
+                                                        <div className="absolute bottom-10 left-0 z-50 flex gap-1 bg-white border border-slate-200 rounded-2xl shadow-xl p-2">
+                                                            {QUICK_EMOJIS.map(emoji => (
+                                                                <button
+                                                                    key={emoji}
+                                                                    onClick={() => handleAddReaction(story.id, emoji)}
+                                                                    className="text-xl hover:scale-125 transition-transform p-1"
+                                                                >
+                                                                    {emoji}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </article>
                                     ))
                                 )}

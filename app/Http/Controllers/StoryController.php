@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Chat;
 use App\Models\Story;
+use App\Models\StoryReaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -63,13 +64,28 @@ class StoryController extends Controller
             ->pluck('story_id')
             ->flip();
 
-        $stories = Story::with('user:id,name,profile_photo_path')
+        $stories = Story::with(['user:id,name,profile_photo_path', 'images'])
             ->whereIn('user_id', $chatUserIds)
             ->latest()
-            ->get()
-            ->map(fn (Story $story) => $this->formatStory($story, $viewedStoryIds->has($story->id)));
+            ->get();
 
-        return response()->json($stories->values());
+        // Load reactions with user name in one query
+        $storyIds = $stories->pluck('id');
+        $reactions = DB::table('story_reactions')
+            ->join('users', 'story_reactions.user_id', '=', 'users.id')
+            ->whereIn('story_reactions.story_id', $storyIds)
+            ->select('story_reactions.*', 'users.name as user_name')
+            ->get()
+            ->groupBy('story_id');
+
+        $result = $stories->map(fn (Story $story) => $this->formatStory(
+            $story,
+            $viewedStoryIds->has($story->id),
+            $reactions->get($story->id, collect()),
+            Auth::id()
+        ));
+
+        return response()->json($result->values());
     }
 
     public function mine()
@@ -151,8 +167,15 @@ class StoryController extends Controller
         ]);
     }
 
-    private function formatStory(Story $story, bool $isViewed = false): array
+    private function formatStory(Story $story, bool $isViewed = false, $reactions = null, int $viewerId = 0): array
     {
+        $reactionsFormatted = ($reactions ?? collect())->map(fn($r) => [
+            'id' => $r->id,
+            'emoji' => $r->emoji,
+            'user_id' => $r->user_id,
+            'user_name' => $r->user_name ?? 'Gebruiker',
+        ])->values()->toArray();
+
         return [
             'id' => $story->id,
             'content' => $story->content,
@@ -163,6 +186,7 @@ class StoryController extends Controller
             'created_at' => $story->created_at,
             'user_id' => $story->user_id,
             'is_viewed' => $isViewed,
+            'reactions' => $reactionsFormatted,
             'user' => [
                 'id' => $story->user?->id,
                 'name' => $story->user?->name,
@@ -171,6 +195,49 @@ class StoryController extends Controller
                     : null,
             ],
         ];
+    }
+
+    public function addReaction(Request $request, Story $story)
+    {
+        $request->validate(['emoji' => 'required|string|max:10']);
+
+        $userId = Auth::id();
+        $emoji = $request->input('emoji');
+
+        $exists = StoryReaction::where('story_id', $story->id)
+            ->where('user_id', $userId)
+            ->where('emoji', $emoji)
+            ->exists();
+
+        if ($exists) {
+            return response()->json(['success' => false, 'message' => 'Al gereageerd'], 422);
+        }
+
+        $reaction = StoryReaction::create([
+            'story_id' => $story->id,
+            'user_id' => $userId,
+            'emoji' => $emoji,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'reaction' => [
+                'id' => $reaction->id,
+                'emoji' => $reaction->emoji,
+                'user_id' => $userId,
+                'user_name' => Auth::user()->name,
+            ],
+        ]);
+    }
+
+    public function removeReaction(Story $story, string $emoji)
+    {
+        StoryReaction::where('story_id', $story->id)
+            ->where('user_id', Auth::id())
+            ->where('emoji', $emoji)
+            ->delete();
+
+        return response()->json(['success' => true]);
     }
 
     public function markViewed(Story $story)
