@@ -109,6 +109,7 @@ export default function Index({ chats, users, auth }: PageProps) {
     const [photoUploadMsg, setPhotoUploadMsg] = useState<string | null>(null);
     const [savingPreferences, setSavingPreferences] = useState(false);
     const photoInputRef = useRef<HTMLInputElement>(null);
+    const messageInputRef = useRef<HTMLTextAreaElement>(null);
     const [darkMode, setDarkMode] = useState(() => {
         if (typeof auth.user.dark_mode === 'boolean') {
             return auth.user.dark_mode;
@@ -705,6 +706,8 @@ export default function Index({ chats, users, auth }: PageProps) {
             await refreshChatList();
             // Direct scroll naar nieuw bericht zonder delay
             scrollToBottom();
+            // Herstel focus op het tekstveld
+            setTimeout(() => messageInputRef.current?.focus(), 0);
         } catch (error: any) {
             console.error('Error sending message:', error);
             
@@ -1791,6 +1794,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 
                                                 <textarea
                                                     key={forceInputKey}
+                                                    ref={messageInputRef}
                                                     value={newMessage}
                                                     onChange={(e) => handleMessageInputChange(e.target.value)}
                                                     onKeyPress={handleKeyPress}
