@@ -10,6 +10,7 @@ interface User {
     is_banned: boolean;
     is_hidden: boolean;
     is_online: boolean;
+    account_type: string;
     created_at: string;
     last_seen: string;
     profile_photo_url?: string | null;
@@ -100,6 +101,22 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
             }
         } catch (error: any) {
             alert(error.response?.data?.message || 'Er ging iets mis bij het zichtbaar maken');
+        }
+    };
+
+    const handleSetAccountType = async (userId: number, newType: 'model' | 'user') => {
+        const label = newType === 'model' ? 'model maken' : 'model-status verwijderen';
+        if (!confirm(`Weet je zeker dat je deze gebruiker wilt ${label}?`)) return;
+        try {
+            const response = await axios.post(`/admin/account-type/${userId}`, { account_type: newType });
+            if (response.data.success) {
+                setUsers(users.map(user =>
+                    user.id === userId ? { ...user, account_type: response.data.account_type } : user
+                ));
+                alert(response.data.message);
+            }
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Er ging iets mis');
         }
     };
 
@@ -267,6 +284,11 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                                                                 Admin
                                                             </span>
                                                         )}
+                                                        {!user.is_admin && user.account_type === 'model' && (
+                                                            <span className="px-2 py-1 text-xs bg-pink-500/80 text-white rounded">
+                                                                Model
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>
@@ -329,6 +351,21 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                                                                 className="px-3 py-1 bg-purple-500/80 hover:bg-purple-600 text-white rounded transition"
                                                             >
                                                                 Verbergen
+                                                            </button>
+                                                        )}
+                                                        {user.account_type === 'model' ? (
+                                                            <button
+                                                                onClick={() => handleSetAccountType(user.id, 'user')}
+                                                                className="px-3 py-1 bg-pink-600/80 hover:bg-pink-700 text-white rounded transition"
+                                                            >
+                                                                Model verwijderen
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleSetAccountType(user.id, 'model')}
+                                                                className="px-3 py-1 bg-pink-400/80 hover:bg-pink-500 text-white rounded transition"
+                                                            >
+                                                                Model maken
                                                             </button>
                                                         )}
                                                     </>

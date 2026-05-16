@@ -26,6 +26,7 @@ class AdminController extends Controller
                 'is_banned' => !is_null($user->banned_at),
                 'is_hidden' => $user->is_hidden,
                 'is_online' => $isOnline,
+                'account_type' => $user->account_type ?? 'user',
                 'created_at' => $user->created_at->format('d-m-Y H:i'),
                 'last_seen' => $user->last_seen_at ? $user->last_seen_at->diffForHumans() : 'Nooit',
                 'profile_photo_url' => $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null,
@@ -169,6 +170,41 @@ class AdminController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Gebruiker is zichtbaar'
+        ]);
+    }
+
+    public function setAccountType(Request $request, User $user)
+    {
+        if ($user->is_admin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Je kunt het account type van een admin niet wijzigen'
+            ], 403);
+        }
+
+        $request->validate([
+            'account_type' => 'required|in:user,model',
+        ]);
+
+        $user->account_type = $request->input('account_type');
+        $user->save();
+
+        AdminLog::create([
+            'admin_user_id' => Auth::id(),
+            'action' => 'set_account_type',
+            'target_user_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'details' => [
+                'user_name' => $user->name,
+                'account_type' => $user->account_type,
+            ],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'account_type' => $user->account_type,
+            'message' => 'Account type bijgewerkt naar ' . $user->account_type,
         ]);
     }
 }
