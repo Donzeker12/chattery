@@ -4,6 +4,17 @@ import axios from '@/lib/axios';
 import Avatar from '../../components/Avatar';
 import NotificationManager from '../../components/NotificationManager';
 
+const isSingleEmoji = (text: string): boolean => {
+    const t = text.trim();
+    if (!t) return false;
+    try {
+        const segments = [...new Intl.Segmenter().segment(t)];
+        return segments.length === 1 && /\p{Extended_Pictographic}/u.test(t);
+    } catch {
+        return /^\p{Extended_Pictographic}$/u.test(t);
+    }
+};
+
 interface User {
     id: number;
     name: string;
@@ -1485,12 +1496,12 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 <div className={`flex ${message.is_mine ? 'justify-end' : 'justify-start'} mb-2`}>
                                                     <div className={`flex flex-col ${message.is_mine ? 'items-end' : 'items-start'} max-w-xs lg:max-w-md`}>
                                                         <div 
-                                                            className={`px-4 py-2 rounded-2xl ${
+                                                            className={`${isSingleEmoji(message.message ?? '') ? 'bg-transparent border-none shadow-none px-1 py-1' : `px-4 py-2 rounded-2xl ${
                                                                 message.is_mine 
                                                                     ? 'text-white' 
                                                                     : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 shadow-sm'
-                                                            }`}
-                                                            style={message.is_mine ? {
+                                                            }`}`}
+                                                            style={(!isSingleEmoji(message.message ?? '') && message.is_mine) ? {
                                                                 background: `linear-gradient(135deg, ${chatColors.primary}, ${chatColors.secondary})`
                                                             } : undefined}
                                                         >
@@ -1578,7 +1589,11 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                                 </div>
                                                             ) : null}
                                                             {message.message && (
-                                                                <p className="whitespace-pre-wrap">{message.message}</p>
+                                                                isSingleEmoji(message.message) ? (
+                                                                    <span className="emoji-animated select-none">{message.message}</span>
+                                                                ) : (
+                                                                    <p className="whitespace-pre-wrap">{message.message}</p>
+                                                                )
                                                             )}
                                                             <div className={`text-xs mt-1 ${
                                                                 message.is_mine ? 'text-white/70' : 'text-gray-500'
