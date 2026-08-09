@@ -3,12 +3,12 @@
 namespace App\Jobs;
 
 use App\Models\MobilePushToken;
+use App\Services\FcmClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class SendFcmNotification implements ShouldQueue
@@ -16,6 +16,7 @@ class SendFcmNotification implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 30;
 
     /**
@@ -31,45 +32,31 @@ class SendFcmNotification implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(FcmClient $fcmClient): void
     {
-        $serverKey = config('services.fcm.server_key');
+        if (! $fcmClient->isConfigured()) {
+            Log::warning('Firebase credentials are missing, skipping mobile push');
 
-        if (empty($serverKey)) {
-            Log::warning('FCM server key is missing, skipping mobile push');
             return;
         }
 
-        $payload = [
-            'to' => $this->mobilePushToken->token,
-            'priority' => 'high',
-            'notification' => [
-                'title' => $this->title,
-                'body' => $this->body,
-                'sound' => 'default',
-            ],
-            'data' => $this->data,
-        ];
+        $result = $fcmClient->send(
+            $this->mobilePushToken->token,
+            $this->title,
+            $this->body,
+            $this->data,
+        );
 
-        $response = Http::withHeaders([
-            'Authorization' => 'key=' . $serverKey,
-            'Content-Type' => 'application/json',
-        ])->post('https://fcm.googleapis.com/fcm/send', $payload);
-
-        if ($response->failed()) {
+        if (! $result->successful) {
             Log::warning('FCM push failed', [
                 'user_id' => $this->mobilePushToken->user_id,
-                'status' => $response->status(),
-                'body' => $response->body(),
+                'status' => $result->status,
+                'error_code' => $result->errorCode,
+                'body' => $result->body,
             ]);
-
-            return;
         }
 
-        $json = $response->json();
-        $error = $json['results'][0]['error'] ?? null;
-
-        if (in_array($error, ['NotRegistered', 'InvalidRegistration'], true)) {
+        if ($result->tokenIsInvalid()) {
             $this->mobilePushToken->delete();
             Log::info('Removed invalid FCM token', [
                 'user_id' => $this->mobilePushToken->user_id,
