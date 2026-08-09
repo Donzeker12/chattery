@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -309,7 +310,10 @@ class ChatController extends Controller
         $user = Auth::user();
 
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => [
+                'required',
+                Rule::exists('users', 'id')->where(fn ($query) => $query->where('is_admin', false)),
+            ],
         ]);
 
         $otherUserId = $validated['user_id'];
@@ -404,8 +408,9 @@ class ChatController extends Controller
             return response()->json(['users' => []]);
         }
         
-        // Search only on name (not email), exclude hidden users and current user
+        // Search only on name (not email), exclude admins, hidden users and current user
         $users = User::where('id', '!=', $user->id)
+            ->where('is_admin', false)
             ->where('is_hidden', false)
             ->where(function ($q) use ($query) {
                 $q->where('name', 'LIKE', $query . '%')

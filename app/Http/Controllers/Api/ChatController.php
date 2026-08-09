@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class ChatController extends Controller
 {
@@ -402,7 +403,10 @@ class ChatController extends Controller
     {
         $user = Auth::user();
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => [
+                'required',
+                Rule::exists('users', 'id')->where(fn ($query) => $query->where('is_admin', false)),
+            ],
         ]);
 
         $otherUserId = $validated['user_id'];
@@ -604,6 +608,7 @@ class ChatController extends Controller
         $user = Auth::user();
         
         $users = User::where('id', '!=', $user->id)
+            ->where('is_admin', false)
             ->where('is_hidden', false)
             ->select('id', 'name', 'profile_photo_path')
             ->get()
