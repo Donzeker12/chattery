@@ -8,7 +8,11 @@ uses(RefreshDatabase::class);
 
 test('admins are excluded from chat user discovery', function () {
     $currentUser = User::factory()->create();
-    $regularUser = User::factory()->create(['is_admin' => false]);
+    $regularUser = User::factory()->create([
+        'is_admin' => false,
+        'profile_type' => 'couple',
+        'gender' => null,
+    ]);
     $admin = User::factory()->create(['is_admin' => true]);
 
     Sanctum::actingAs($currentUser);
@@ -17,7 +21,11 @@ test('admins are excluded from chat user discovery', function () {
 
     $response
         ->assertOk()
-        ->assertJsonFragment(['id' => $regularUser->id])
+        ->assertJsonFragment([
+            'id' => $regularUser->id,
+            'profile_type' => 'couple',
+            'gender' => null,
+        ])
         ->assertJsonMissing(['id' => $admin->id]);
 });
 
@@ -39,6 +47,8 @@ test('admins are also excluded from web chat search', function () {
     $regularUser = User::factory()->create([
         'name' => 'Zoekbare Gebruiker',
         'is_admin' => false,
+        'profile_type' => 'individual',
+        'gender' => 'female',
     ]);
     $admin = User::factory()->create([
         'name' => 'Zoekbare Admin',
@@ -51,7 +61,11 @@ test('admins are also excluded from web chat search', function () {
 
     $response
         ->assertOk()
-        ->assertJsonFragment(['id' => $regularUser->id])
+        ->assertJsonFragment([
+            'id' => $regularUser->id,
+            'profile_type' => 'individual',
+            'gender' => 'female',
+        ])
         ->assertJsonMissing(['id' => $admin->id]);
 });
 

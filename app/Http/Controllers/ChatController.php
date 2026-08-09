@@ -416,7 +416,7 @@ class ChatController extends Controller
                 $q->where('name', 'LIKE', $query . '%')
                   ->orWhere('name', 'LIKE', '% ' . $query . '%');
             })
-            ->select('id', 'name', 'profile_photo_path')
+            ->select('id', 'name', 'profile_photo_path', 'profile_type', 'gender')
             ->limit(10)
             ->get()
             ->map(function ($u) {
@@ -424,6 +424,8 @@ class ChatController extends Controller
                     'id' => $u->id,
                     'name' => $u->name,
                     'profile_photo_url' => $u->profile_photo_path ? asset('storage/' . $u->profile_photo_path) : null,
+                    'profile_type' => $u->profile_type,
+                    'gender' => $u->gender,
                 ];
             })
             ->toArray();

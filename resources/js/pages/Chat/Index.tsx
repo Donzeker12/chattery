@@ -45,6 +45,8 @@ interface User {
     id: number;
     name: string;
     profile_photo_url?: string;
+    profile_type?: 'individual' | 'couple' | null;
+    gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
     is_online: boolean;
     created_at?: string;
     is_admin?: boolean;
@@ -53,6 +55,25 @@ interface User {
     chat_animations?: boolean;
     sound_notifications?: boolean;
     show_typing_indicator?: boolean;
+}
+
+function getProfileTag(user: User): { label: string; className: string } {
+    if (user.profile_type === 'couple') {
+        return { label: 'Koppel', className: 'bg-amber-100 text-amber-800' };
+    }
+
+    switch (user.gender) {
+        case 'male':
+            return { label: 'Man', className: 'bg-blue-100 text-blue-800' };
+        case 'female':
+            return { label: 'Vrouw', className: 'bg-rose-100 text-rose-800' };
+        case 'other':
+            return { label: 'Anders', className: 'bg-emerald-100 text-emerald-800' };
+        case 'prefer_not_to_say':
+            return { label: 'Niet vermeld', className: 'bg-gray-100 text-gray-700' };
+        default:
+            return { label: 'Onbekend', className: 'bg-gray-100 text-gray-600' };
+    }
 }
 
 interface Chat {
@@ -2005,22 +2026,29 @@ export default function Index({ chats, users, auth }: PageProps) {
                                     <div className="mt-4 max-h-60 overflow-y-auto">
                                         {searchResults.length > 0 ? (
                                             <div className="space-y-2">
-                                                {searchResults.map((user) => (
-                                                    <button
-                                                        key={user.id}
-                                                        onClick={() => createChat(user.id)}
-                                                        className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <Avatar
-                                                                photoUrl={user.profile_photo_url}
-                                                                name={user.name}
-                                                                size="sm"
-                                                            />
-                                                            <span className="font-medium text-gray-900">{user.name}</span>
-                                                        </div>
-                                                    </button>
-                                                ))}
+                                                {searchResults.map((user) => {
+                                                    const profileTag = getProfileTag(user);
+
+                                                    return (
+                                                        <button
+                                                            key={user.id}
+                                                            onClick={() => createChat(user.id)}
+                                                            className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <Avatar
+                                                                    photoUrl={user.profile_photo_url}
+                                                                    name={user.name}
+                                                                    size="sm"
+                                                                />
+                                                                <span className="min-w-0 flex-1 truncate font-medium text-gray-900">{user.name}</span>
+                                                                <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${profileTag.className}`}>
+                                                                    {profileTag.label}
+                                                                </span>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         ) : searchQuery.length > 2 ? (
                                             <div className="text-center py-8 text-gray-500">
