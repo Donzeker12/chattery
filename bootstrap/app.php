@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         
         $middleware->alias([
             'admin' => \App\Http\Middleware\IsAdmin::class,
+            'profile.complete' => \App\Http\Middleware\EnsureProfileIsComplete::class,
         ]);
 
         // Enable CORS and session for API routes (supports both cookie auth and Bearer tokens)

@@ -10,9 +10,19 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    public function complete(): Response|\Illuminate\Http\RedirectResponse
+    {
+        if (! Auth::user()->requiresProfileCompletion()) {
+            return redirect('/chat');
+        }
+
+        return Inertia::render('Profile/Complete');
+    }
+
     /**
      * Display the profile page.
      */
@@ -96,7 +106,7 @@ class ProfileController extends Controller
             'gender' => [
                 'nullable',
                 Rule::requiredIf($request->input('profile_type') === 'individual'),
-                Rule::in(['male', 'female', 'other', 'prefer_not_to_say']),
+                Rule::in(['male', 'female', 'other']),
             ],
         ]);
 

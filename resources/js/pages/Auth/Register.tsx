@@ -23,7 +23,7 @@ export default function Register() {
         password: '',
         password_confirmation: '',
         profile_type: 'individual' as 'individual' | 'couple',
-        gender: '' as '' | 'male' | 'female' | 'other' | 'prefer_not_to_say',
+        gender: '' as '' | 'male' | 'female' | 'other',
     });
 
     // Check if user is already logged in and redirect to chat
@@ -138,7 +138,6 @@ export default function Register() {
                                     <option value="male">Man</option>
                                     <option value="female">Vrouw</option>
                                     <option value="other">Anders</option>
-                                    <option value="prefer_not_to_say">Zeg ik liever niet</option>
                                 </select>
                                 {errors.gender && <p className="mt-2 text-sm text-red-600">{errors.gender}</p>}
                             </div>

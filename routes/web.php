@@ -23,8 +23,10 @@ Route::middleware('guest')->group(function () {
 });
 
 // Protected routes
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::get('/profile/complete', [ProfileController::class, 'complete'])->name('profile.complete');
     
     // Profile routes
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');

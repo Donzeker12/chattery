@@ -57,6 +57,20 @@ class User extends Authenticatable
         ];
     }
 
+    public function requiresProfileCompletion(): bool
+    {
+        if ($this->is_admin) {
+            return false;
+        }
+
+        if ($this->profile_type === 'couple') {
+            return false;
+        }
+
+        return $this->profile_type !== 'individual'
+            || ! in_array($this->gender, ['male', 'female', 'other'], true);
+    }
+
     /**
      * Get all chats where user is participant one.
      */

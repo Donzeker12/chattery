@@ -6,7 +6,7 @@ import ProfilePhotoUpload from '@/components/ProfilePhotoUpload';
 import axios from '@/lib/axios';
 
 type ProfileType = 'individual' | 'couple';
-type Gender = 'male' | 'female' | 'other' | 'prefer_not_to_say';
+type Gender = 'male' | 'female' | 'other';
 
 interface User {
     id: number;
@@ -391,7 +391,6 @@ setGender('');
                             <option value="male">Man</option>
                             <option value="female">Vrouw</option>
                             <option value="other">Anders</option>
-                            <option value="prefer_not_to_say">Zeg ik liever niet</option>
                         </select>
                     </div>
                 )}

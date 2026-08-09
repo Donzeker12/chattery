@@ -111,6 +111,10 @@ class AuthController extends Controller
                 ]);
             }
 
+            if (Auth::user()->requiresProfileCompletion()) {
+                return redirect()->route('profile.complete');
+            }
+
             return redirect()->intended('/chat');
         }
 
@@ -140,7 +144,7 @@ class AuthController extends Controller
             'gender' => [
                 'nullable',
                 Rule::requiredIf($request->input('profile_type') === 'individual'),
-                Rule::in(['male', 'female', 'other', 'prefer_not_to_say']),
+                Rule::in(['male', 'female', 'other']),
             ],
         ]);
 
