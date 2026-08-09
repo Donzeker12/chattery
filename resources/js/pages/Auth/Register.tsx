@@ -1,8 +1,10 @@
-import { FormEvent, useEffect } from 'react';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
+import type { FormEvent} from 'react';
+import { useEffect } from 'react';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 
 interface PageProps {
+    [key: string]: unknown;
     auth?: {
         user?: {
             id: number;
@@ -20,6 +22,8 @@ export default function Register() {
         email: '',
         password: '',
         password_confirmation: '',
+        profile_type: 'individual' as 'individual' | 'couple',
+        gender: '' as '' | 'male' | 'female' | 'other' | 'prefer_not_to_say',
     });
 
     // Check if user is already logged in and redirect to chat
@@ -80,6 +84,65 @@ export default function Register() {
                                 <p className="mt-2 text-sm text-red-600">{errors.email}</p>
                             )}
                         </div>
+
+                        <fieldset>
+                            <legend className="block text-sm font-medium text-gray-700 mb-2">Profieltype</legend>
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    { value: 'individual', label: 'Persoon' },
+                                    { value: 'couple', label: 'Koppel' },
+                                ].map((option) => (
+                                    <label
+                                        key={option.value}
+                                        className={`cursor-pointer rounded-lg border-2 p-3 text-center font-medium transition ${
+                                            data.profile_type === option.value
+                                                ? 'border-purple-600 bg-purple-50 text-purple-700'
+                                                : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="profile_type"
+                                            value={option.value}
+                                            checked={data.profile_type === option.value}
+                                            onChange={() => {
+                                                const profileType = option.value as 'individual' | 'couple';
+                                                setData('profile_type', profileType);
+
+                                                if (profileType === 'couple') {
+                                                    setData('gender', '');
+                                                }
+                                            }}
+                                            className="sr-only"
+                                        />
+                                        {option.label}
+                                    </label>
+                                ))}
+                            </div>
+                            {errors.profile_type && <p className="mt-2 text-sm text-red-600">{errors.profile_type}</p>}
+                        </fieldset>
+
+                        {data.profile_type === 'individual' && (
+                            <div>
+                                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Gender
+                                </label>
+                                <select
+                                    id="gender"
+                                    value={data.gender}
+                                    onChange={(e) => setData('gender', e.target.value as typeof data.gender)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
+                                    required
+                                >
+                                    <option value="">Maak een keuze</option>
+                                    <option value="male">Man</option>
+                                    <option value="female">Vrouw</option>
+                                    <option value="other">Anders</option>
+                                    <option value="prefer_not_to_say">Zeg ik liever niet</option>
+                                </select>
+                                {errors.gender && <p className="mt-2 text-sm text-red-600">{errors.gender}</p>}
+                            </div>
+                        )}
 
                         <div>
                             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">

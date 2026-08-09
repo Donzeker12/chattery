@@ -1,8 +1,12 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { useState, useEffect, FormEvent } from 'react';
-import axios from '@/lib/axios';
+import type { FormEvent } from 'react';
+import { useState, useEffect } from 'react';
 import Avatar from '@/components/Avatar';
 import ProfilePhotoUpload from '@/components/ProfilePhotoUpload';
+import axios from '@/lib/axios';
+
+type ProfileType = 'individual' | 'couple';
+type Gender = 'male' | 'female' | 'other' | 'prefer_not_to_say';
 
 interface User {
     id: number;
@@ -15,9 +19,12 @@ interface User {
     chat_animations?: boolean;
     sound_notifications?: boolean;
     show_typing_indicator?: boolean;
+    profile_type?: ProfileType | null;
+    gender?: Gender | null;
 }
 
 interface PageProps {
+    [key: string]: unknown;
     auth: {
         user: User;
     };
@@ -80,6 +87,7 @@ export default function Settings() {
 
     const loadHiddenChats = async () => {
         setLoadingHiddenChats(true);
+
         try {
             const response = await axios.get('/chat/hidden');
             setHiddenChats(response.data.hidden_chats || []);
@@ -117,6 +125,13 @@ export default function Settings() {
     const handlePhotoUpdate = (newPhotoUrl: string | null) => {
         setUser({ ...user, profile_photo_url: newPhotoUrl });
         setSuccessMessage('Profielfoto succesvol bijgewerkt!');
+        setShowSuccessModal(true);
+        setTimeout(() => setShowSuccessModal(false), 3000);
+    };
+
+    const handleProfileUpdate = (updatedUser: User) => {
+        setUser((current) => ({ ...current, ...updatedUser }));
+        setSuccessMessage('Profielgegevens succesvol bijgewerkt!');
         setShowSuccessModal(true);
         setTimeout(() => setShowSuccessModal(false), 3000);
     };
@@ -175,7 +190,7 @@ export default function Settings() {
     const renderContent = () => {
         switch (activeTab) {
             case 'profiel':
-                return <ProfielContent user={user} onPhotoUpdate={handlePhotoUpdate} />;
+                return <ProfielContent user={user} onPhotoUpdate={handlePhotoUpdate} onProfileUpdate={handleProfileUpdate} />;
             case 'beveiliging':
                 return (
                     <BeveigingContent
@@ -281,34 +296,119 @@ export default function Settings() {
 interface ProfielContentProps {
     user: User;
     onPhotoUpdate: (url: string | null) => void;
+    onProfileUpdate: (user: User) => void;
 }
 
-const ProfielContent: React.FC<ProfielContentProps> = ({ user, onPhotoUpdate }) => (
-    <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Profielfoto</h2>
-            
-            <div className="space-y-6">
-                <div className="flex justify-center md:justify-start">
-                    <ProfilePhotoUpload
-                        currentPhotoUrl={user.profile_photo_url}
-                        onPhotoUpdate={onPhotoUpdate}
-                    />
-                </div>
-                
-                <div className="text-center border-t pt-6">
-                    <h3 className="text-xl font-semibold text-gray-800">{user.name}</h3>
-                    <p className="text-gray-600">{user.email}</p>
-                    {user.is_admin && (
-                        <span className="inline-block mt-2 px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
-                            Administrator
-                        </span>
-                    )}
+const ProfielContent: React.FC<ProfielContentProps> = ({ user, onPhotoUpdate, onProfileUpdate }) => {
+    const [profileType, setProfileType] = useState<ProfileType | ''>(user.profile_type ?? '');
+    const [gender, setGender] = useState<Gender | ''>(user.gender ?? '');
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const saveProfile = async (event: FormEvent) => {
+        event.preventDefault();
+        setSaving(true);
+        setError(null);
+
+        try {
+            const response = await axios.patch('/profile', {
+                profile_type: profileType,
+                gender: profileType === 'couple' ? null : gender,
+            });
+            onProfileUpdate(response.data.user);
+        } catch (requestError: any) {
+            const validationErrors = requestError.response?.data?.errors;
+            setError(validationErrors?.profile_type?.[0] || validationErrors?.gender?.[0] || 'Profielgegevens konden niet worden opgeslagen.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Profielfoto</h2>
+
+                <div className="space-y-6">
+                    <div className="flex justify-center md:justify-start">
+                        <ProfilePhotoUpload
+                            currentPhotoUrl={user.profile_photo_url}
+                            onPhotoUpdate={onPhotoUpdate}
+                        />
+                    </div>
+
+                    <div className="text-center border-t pt-6">
+                        <h3 className="text-xl font-semibold text-gray-800">{user.name}</h3>
+                        <p className="text-gray-600">{user.email}</p>
+                        {user.is_admin && (
+                            <span className="inline-block mt-2 px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
+                                Administrator
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
+
+            <form onSubmit={saveProfile} className="bg-white rounded-xl shadow-lg p-6 space-y-5">
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-800">Profielgegevens</h2>
+                    <p className="text-sm text-gray-500 mt-1">Deze gegevens helpen om profielen duidelijk te presenteren.</p>
+                </div>
+
+                <div>
+                    <label htmlFor="settings-profile-type" className="block text-sm font-medium text-gray-700 mb-2">Profieltype</label>
+                    <select
+                        id="settings-profile-type"
+                        value={profileType}
+                        onChange={(event) => {
+                            const value = event.target.value as ProfileType;
+                            setProfileType(value);
+
+                            if (value === 'couple') {
+setGender('');
+}
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                        required
+                    >
+                        <option value="">Maak een keuze</option>
+                        <option value="individual">Persoon</option>
+                        <option value="couple">Koppel</option>
+                    </select>
+                </div>
+
+                {profileType === 'individual' && (
+                    <div>
+                        <label htmlFor="settings-gender" className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                        <select
+                            id="settings-gender"
+                            value={gender}
+                            onChange={(event) => setGender(event.target.value as Gender)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                            required
+                        >
+                            <option value="">Maak een keuze</option>
+                            <option value="male">Man</option>
+                            <option value="female">Vrouw</option>
+                            <option value="other">Anders</option>
+                            <option value="prefer_not_to_say">Zeg ik liever niet</option>
+                        </select>
+                    </div>
+                )}
+
+                {error && <p className="text-sm text-red-600">{error}</p>}
+
+                <button
+                    type="submit"
+                    disabled={saving || !profileType || (profileType === 'individual' && !gender)}
+                    className="px-5 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {saving ? 'Opslaan...' : 'Profielgegevens opslaan'}
+                </button>
+            </form>
         </div>
-    </div>
-);
+    );
+};
 
 interface BeveigingContentProps {
     user: User;

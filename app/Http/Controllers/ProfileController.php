@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -82,6 +83,45 @@ class ProfileController extends Controller
             'photo_url' => $user->profile_photo_path 
                 ? asset('storage/' . $user->profile_photo_path) 
                 : null,
+        ]);
+    }
+
+    /**
+     * Update profile classification details.
+     */
+    public function update(Request $request)
+    {
+        $validated = $request->validate([
+            'profile_type' => ['required', Rule::in(['individual', 'couple'])],
+            'gender' => [
+                'nullable',
+                Rule::requiredIf($request->input('profile_type') === 'individual'),
+                Rule::in(['male', 'female', 'other', 'prefer_not_to_say']),
+            ],
+        ]);
+
+        if ($validated['profile_type'] === 'couple') {
+            $validated['gender'] = null;
+        }
+
+        $user = Auth::user();
+        $user->fill($validated);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profielgegevens opgeslagen',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_admin' => $user->is_admin,
+                'profile_type' => $user->profile_type,
+                'gender' => $user->gender,
+                'profile_photo_url' => $user->profile_photo_path
+                    ? asset('storage/' . $user->profile_photo_path)
+                    : null,
+            ],
         ]);
     }
 

@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -135,12 +136,20 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'profile_type' => ['required', Rule::in(['individual', 'couple'])],
+            'gender' => [
+                'nullable',
+                Rule::requiredIf($request->input('profile_type') === 'individual'),
+                Rule::in(['male', 'female', 'other', 'prefer_not_to_say']),
+            ],
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'profile_type' => $validated['profile_type'],
+            'gender' => $validated['profile_type'] === 'couple' ? null : $validated['gender'],
         ]);
 
         Auth::login($user);
