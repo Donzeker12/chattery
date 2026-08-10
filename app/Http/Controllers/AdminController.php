@@ -13,19 +13,14 @@ class AdminController extends Controller
 {
     public function index()
     {
-        // Consider users online if they were active in the last 5 minutes
-        $onlineThreshold = now()->subMinutes(5);
-        
-        $users = User::orderBy('created_at', 'desc')->get()->map(function ($user) use ($onlineThreshold) {
-            $isOnline = $user->last_seen_at && $user->last_seen_at >= $onlineThreshold;
-            
+        $users = User::orderBy('created_at', 'desc')->get()->map(function ($user) {
             return [
                 'id' => $user->id,
                 'name' => $user->name,
                 'is_admin' => $user->is_admin,
                 'is_banned' => !is_null($user->banned_at),
                 'is_hidden' => $user->is_hidden,
-                'is_online' => $isOnline,
+                'is_online' => $user->isOnline(),
                 'account_type' => $user->account_type ?? 'user',
                 'created_at' => $user->created_at->format('d-m-Y H:i'),
                 'last_seen' => $user->last_seen_at ? $user->last_seen_at->diffForHumans() : 'Nooit',

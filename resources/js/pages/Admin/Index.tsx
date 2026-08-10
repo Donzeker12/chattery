@@ -176,7 +176,7 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                                 <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
                                 {online_users}
                             </p>
-                            <p className="text-white/80">Actief in de laatste 5 minuten</p>
+                            <p className="text-white/80">Actief in de laatste 30 seconden</p>
                         </div>
                         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
                             <h2 className="text-xl font-semibold text-white mb-2">Screenshot Pogingen</h2>

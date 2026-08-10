@@ -293,6 +293,30 @@ export default function Index({ chats, users, auth }: PageProps) {
     }, []);
 
     useEffect(() => {
+        const sendHeartbeat = () => {
+            if (document.visibilityState === 'visible') {
+                axios.post('/api/presence/heartbeat').catch(() => {});
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                sendHeartbeat();
+                refreshChatList();
+            }
+        };
+
+        sendHeartbeat();
+        const interval = window.setInterval(sendHeartbeat, 15000);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
+    useEffect(() => {
         const checkMobile = () => {
             const mobile = window.innerWidth < 768;
             setIsMobile(mobile);

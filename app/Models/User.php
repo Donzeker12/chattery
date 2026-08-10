@@ -71,6 +71,12 @@ class User extends Authenticatable
             || ! in_array($this->gender, ['male', 'female', 'other'], true);
     }
 
+    public function isOnline(): bool
+    {
+        return $this->last_seen_at !== null
+            && $this->last_seen_at->isAfter(now()->subSeconds(30));
+    }
+
     /**
      * Get all chats where user is participant one.
      */

@@ -25,7 +25,6 @@ class ChatController extends Controller
     public function index(Request $request): Response
     {
         $user = Auth::user();
-        $onlineThreshold = now()->subMinutes(5);
         
         // Get all chats for the authenticated user with latest message
         $hiddenChatIds = $user->hidden_chat_ids ?? [];
@@ -42,16 +41,15 @@ class ChatController extends Controller
                 $hiddenForUsers = $chat->hidden_for_users ?? [];
                 return !in_array($user->id, $hiddenForUsers);
             })
-            ->map(function ($chat) use ($user, $onlineThreshold) {
+            ->map(function ($chat) use ($user) {
                 $otherUser = $chat->otherParticipant($user->id);
-                $isOnline = $otherUser->last_seen_at && $otherUser->last_seen_at >= $onlineThreshold;
                 
                 return [
                     'id' => $chat->id,
                     'participant' => [
                         'id' => $otherUser->id,
                         'name' => $otherUser->name,
-                        'is_online' => $isOnline,
+                        'is_online' => $otherUser->isOnline(),
                         'created_at' => $otherUser->created_at?->toIso8601String(),
                         'profile_photo_url' => $otherUser->profile_photo_path ? asset('storage/' . $otherUser->profile_photo_path) : null,
                     ],
@@ -94,7 +92,6 @@ class ChatController extends Controller
     public function show(Chat $chat)
     {
         $user = Auth::user();
-        $onlineThreshold = now()->subMinutes(5);
 
         // Verify user is part of this chat
         if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
@@ -173,7 +170,6 @@ class ChatController extends Controller
             ->values();
 
         $otherUser = $chat->otherParticipant($user->id);
-        $isOnline = $otherUser->last_seen_at && $otherUser->last_seen_at >= $onlineThreshold;
 
         return response()->json([
             'chat' => [
@@ -181,7 +177,7 @@ class ChatController extends Controller
                 'participant' => [
                     'id' => $otherUser->id,
                     'name' => $otherUser->name,
-                    'is_online' => $isOnline,
+                    'is_online' => $otherUser->isOnline(),
                     'created_at' => $otherUser->created_at?->toIso8601String(),
                     'profile_photo_url' => $otherUser->profile_photo_path ? asset('storage/' . $otherUser->profile_photo_path) : null,
                 ],
@@ -352,7 +348,6 @@ class ChatController extends Controller
     public function getChatList()
     {
         $user = Auth::user();
-        $onlineThreshold = now()->subMinutes(5);
         
         // Get all chats for the authenticated user with latest message
         $chats = Chat::where('user_one_id', $user->id)
@@ -364,16 +359,15 @@ class ChatController extends Controller
                 $hiddenForUsers = $chat->hidden_for_users ?? [];
                 return !in_array($user->id, $hiddenForUsers);
             })
-            ->map(function ($chat) use ($user, $onlineThreshold) {
+            ->map(function ($chat) use ($user) {
                 $otherUser = $chat->otherParticipant($user->id);
-                $isOnline = $otherUser->last_seen_at && $otherUser->last_seen_at >= $onlineThreshold;
                 
                 return [
                     'id' => $chat->id,
                     'participant' => [
                         'id' => $otherUser->id,
                         'name' => $otherUser->name,
-                        'is_online' => $isOnline,
+                        'is_online' => $otherUser->isOnline(),
                         'created_at' => $otherUser->created_at?->toIso8601String(),
                         'profile_photo_url' => $otherUser->profile_photo_path ? asset('storage/' . $otherUser->profile_photo_path) : null,
                     ],
@@ -866,7 +860,6 @@ class ChatController extends Controller
     public function getHiddenChats()
     {
         $user = Auth::user();
-        $onlineThreshold = now()->subMinutes(5);
         
         $hiddenChatIds = $user->hidden_chat_ids ?? [];
         
@@ -881,16 +874,15 @@ class ChatController extends Controller
             })
             ->with(['userOne', 'userTwo', 'latestMessage'])
             ->get()
-            ->map(function ($chat) use ($user, $onlineThreshold) {
+            ->map(function ($chat) use ($user) {
                 $otherUser = $chat->otherParticipant($user->id);
-                $isOnline = $otherUser->last_seen_at && $otherUser->last_seen_at >= $onlineThreshold;
                 
                 return [
                     'id' => $chat->id,
                     'participant' => [
                         'id' => $otherUser->id,
                         'name' => $otherUser->name,
-                        'is_online' => $isOnline,
+                        'is_online' => $otherUser->isOnline(),
                         'profile_photo_url' => $otherUser->profile_photo_path ? asset('storage/' . $otherUser->profile_photo_path) : null,
                     ],
                     'latest_message' => $chat->latestMessage ? [

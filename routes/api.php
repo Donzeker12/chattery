@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\MobilePushTokenController;
+use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\CustomEmojiController;
@@ -20,6 +21,7 @@ Route::get('/push/vapid-key', [PushNotificationController::class, 'getVapidPubli
 Route::middleware(['auth:sanctum', 'profile.complete'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    Route::post('/presence/heartbeat', [PresenceController::class, 'heartbeat']);
     
     // Profile
     Route::patch('/profile', [ProfileController::class, 'update']);
