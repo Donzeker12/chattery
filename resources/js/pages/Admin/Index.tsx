@@ -295,12 +295,19 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                                                 <div className="flex items-center gap-3">
-                                                    <Avatar
-                                                        photoUrl={user.profile_photo_url}
-                                                        name={user.name}
-                                                        size="sm"
-                                                        isOnline={user.is_online}
-                                                    />
+                                                    <div className="relative">
+                                                        <Avatar
+                                                            photoUrl={user.profile_photo_url}
+                                                            name={user.name}
+                                                            size="sm"
+                                                        />
+                                                        {user.is_online && (
+                                                            <span
+                                                                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"
+                                                                title="Online"
+                                                            />
+                                                        )}
+                                                    </div>
                                                     <div className="flex items-center gap-2">
                                                         <span>{user.name}</span>
                                                         {user.is_admin && (
