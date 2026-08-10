@@ -87,4 +87,5 @@ Route::middleware(['auth', 'admin', 'throttle:60,1'])->group(function () {
     Route::post('/admin/hide/{user}', [AdminController::class, 'hideUser'])->name('admin.hide');
     Route::post('/admin/unhide/{user}', [AdminController::class, 'unhideUser'])->name('admin.unhide');
     Route::post('/admin/account-type/{user}', [AdminController::class, 'setAccountType'])->name('admin.account-type');
+    Route::delete('/admin/users/{user}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
 });

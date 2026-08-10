@@ -135,6 +135,24 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
         }
     };
 
+    const handleDeleteUser = async (user: User) => {
+        if (!confirm(`Weet je zeker dat je ${user.name} definitief wilt verwijderen?`)) {
+            return;
+        }
+
+        try {
+            const response = await axios.delete(`/admin/users/${user.id}`);
+            if (response.data.success) {
+                setUsers(users.filter(existingUser => existingUser.id !== user.id));
+                alert(response.data.message);
+            }
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Er ging iets mis bij het verwijderen');
+        }
+    };
+
+    const onlineUsersCount = users.filter(user => user.is_online).length;
+
     return (
         <>
             <Head title="Admin Panel" />
@@ -167,13 +185,13 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
                             <h2 className="text-xl font-semibold text-white mb-2">Totaal Gebruikers</h2>
-                            <p className="text-3xl font-bold text-white">{total_users}</p>
+                            <p className="text-3xl font-bold text-white">{users.length}</p>
                             <p className="text-white/80">Geregistreerde accounts</p>
                         </div>
                         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6">
                             <h2 className="text-xl font-semibold text-white mb-2">Online Gebruikers</h2>
                             <p className="text-3xl font-bold text-white">
-                                {online_users}
+                                {onlineUsersCount}
                             </p>
                             <p className="text-white/80">Actief in de laatste 30 seconden</p>
                         </div>
@@ -399,6 +417,12 @@ export default function AdminIndex({ users: initialUsers, total_users, online_us
                                                                 Model maken
                                                             </button>
                                                         )}
+                                                        <button
+                                                            onClick={() => handleDeleteUser(user)}
+                                                            className="px-3 py-1 bg-red-700/90 hover:bg-red-800 text-white rounded transition"
+                                                        >
+                                                            Verwijderen
+                                                        </button>
                                                     </>
                                                 )}
                                             </td>

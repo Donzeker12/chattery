@@ -202,4 +202,43 @@ class AdminController extends Controller
             'message' => 'Account type bijgewerkt naar ' . $user->account_type,
         ]);
     }
+
+    public function deleteUser(Request $request, User $user)
+    {
+        if ($user->id === Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Je kunt je eigen account niet verwijderen via admin.'
+            ], 403);
+        }
+
+        if ($user->is_admin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Je kunt geen admin gebruiker verwijderen.'
+            ], 403);
+        }
+
+        $deletedUserId = $user->id;
+        $deletedUserName = $user->name;
+
+        $user->delete();
+
+        AdminLog::create([
+            'admin_user_id' => Auth::id(),
+            'action' => 'delete_user',
+            'target_user_id' => null,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'details' => [
+                'deleted_user_id' => $deletedUserId,
+                'user_name' => $deletedUserName,
+            ],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Gebruiker is verwijderd.'
+        ]);
+    }
 }
