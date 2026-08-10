@@ -1168,7 +1168,6 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         name={auth.user.name} 
                                         size="md"
                                     />
-                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></div>
                                 </div>
                                 <div className="min-w-0">
                                     <h1 className="text-lg font-bold text-white">
@@ -1236,7 +1235,6 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         name={auth.user.name}
                                         size="sm"
                                     />
-                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></div>
                                 </div>
                                 <div className="flex-1 text-left">
                                     <p className="font-medium text-gray-800 dark:text-white">{auth.user.name}</p>
@@ -1337,9 +1335,6 @@ export default function Index({ chats, users, auth }: PageProps) {
                                                 name={chat.participant.name}
                                                 size="md"
                                             />
-                                            {chat.participant.is_online && (
-                                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-gray-800"></div>
-                                            )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-1">
@@ -1394,7 +1389,6 @@ export default function Index({ chats, users, auth }: PageProps) {
                                         name={auth.user.name}
                                         size="md"
                                     />
-                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></div>
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <p className="font-semibold text-gray-900 dark:text-white truncate">{auth.user.is_admin ? 'Admin' : auth.user.name}</p>
@@ -1484,14 +1478,11 @@ export default function Index({ chats, users, auth }: PageProps) {
                                             name={currentParticipant.name}
                                             size="md"
                                         />
-                                        {currentParticipant.is_online && (
-                                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></div>
-                                        )}
                                     </div>
                                     <div className="text-left min-w-0 flex-1">
                                         <h2 className="font-bold text-gray-900 dark:text-gray-100 text-base sm:text-lg truncate">{currentParticipant.name}</h2>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            {currentParticipant.is_online ? '🟢 Online' : '⚪ Offline'}
+                                            {currentParticipant.is_online ? 'Online' : 'Offline'}
                                         </p>
                                     </div>
                                 </button>
@@ -2324,7 +2315,7 @@ export default function Index({ chats, users, auth }: PageProps) {
                             {/* Avatar positioned absolutely to avoid clipping */}
                             <div className="absolute z-10 left-1/2 -translate-x-1/2 top-40 sm:top-52">
                                 <div
-                                    className={`relative cursor-pointer rounded-full ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 ${profileUser.is_online ? 'ring-green-400' : 'ring-gray-300 dark:ring-gray-600'}`}
+                                    className="relative cursor-pointer rounded-full ring-4 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 ring-gray-300 dark:ring-gray-600"
                                     onClick={() => profileUser.profile_photo_url && setFullscreenImage(profileUser.profile_photo_url)}
                                 >
                                     <Avatar photoUrl={profileUser.profile_photo_url} name={profileUser.name} size="xl" />
@@ -2343,12 +2334,8 @@ export default function Index({ chats, users, auth }: PageProps) {
                                 {/* Avatar info section */}
                                 <div className="flex flex-col items-center pt-16 px-6 pb-2">
                                     <h2 className="mt-3 text-xl font-bold text-gray-900 dark:text-white">{profileUser.name}</h2>
-                                    <span className={`mt-1 text-sm font-medium px-3 py-0.5 rounded-full ${
-                                        profileUser.is_online
-                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
-                                            : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                                    }`}>
-                                        {profileUser.is_online ? '● Online' : '○ Offline'}
+                                    <span className="mt-1 text-sm font-medium px-3 py-0.5 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                        {profileUser.is_online ? 'Online' : 'Offline'}
                                     </span>
                                 </div>
 

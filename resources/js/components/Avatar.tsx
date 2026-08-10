@@ -14,13 +14,6 @@ export default function Avatar({ photoUrl, name = 'User', size = 'md', isOnline,
         xl: 'w-24 h-24 text-4xl',
     };
 
-    const onlineIndicatorSizes = {
-        sm: 'w-2 h-2',
-        md: 'w-3 h-3',
-        lg: 'w-4 h-4',
-        xl: 'w-5 h-5',
-    };
-
     // Get initials from name
     const getInitials = (name: string) => {
         if (!name || typeof name !== 'string') return '?';
@@ -66,16 +59,6 @@ export default function Avatar({ photoUrl, name = 'User', size = 'md', isOnline,
                     <span>{getInitials(name)}</span>
                 )}
             </div>
-
-            {/* Online indicator */}
-            {isOnline !== undefined && (
-                <div
-                    className={`absolute bottom-0 right-0 ${onlineIndicatorSizes[size]} rounded-full border-2 border-white ${
-                        isOnline ? 'bg-green-500' : 'bg-gray-400'
-                    }`}
-                    title={isOnline ? 'Online' : 'Offline'}
-                />
-            )}
         </div>
     );
 }
